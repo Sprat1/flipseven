@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- PeerJS kütüphanesi -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
@@ -21,21 +23,93 @@
         <h1 class="cyber-title">👾 FLIP 7 ARENA 👾</h1>
         <p class="cyber-subtitle">Riske gir, sayı kartlarını eşleştirmeden topla, rakiplerini dondur ve 200 puana ulaşan ilk oyuncu ol!</p>
         
-        <div class="setup-controls">
-          <label for="player-count">Oyuncu Sayısı:</label>
-          <select id="player-count">
-            <option value="2" selected>2 Oyuncu</option>
-            <option value="3">3 Oyuncu</option>
-            <option value="4">4 Oyuncu</option>
-            <option value="5">5 Oyuncu</option>
-          </select>
+        <!-- Sekmeler (Tabs) -->
+        <div class="setup-tabs">
+          <button id="tab-local-btn" class="tab-btn active">👤 Yerel / AI Oyunu</button>
+          <button id="tab-online-btn" class="tab-btn">🌐 Çevrimiçi (Online)</button>
         </div>
 
-        <div id="players-setup-list" class="players-setup-grid">
-          <!-- Dinamik olarak JS tarafından doldurulacak -->
+        <!-- YEREL / AI PANELİ -->
+        <div id="panel-local" class="tab-panel active">
+          <div class="setup-controls">
+            <label for="player-count">Oyuncu Sayısı:</label>
+            <select id="player-count">
+              <option value="2" selected>2 Oyuncu</option>
+              <option value="3">3 Oyuncu</option>
+              <option value="4">4 Oyuncu</option>
+              <option value="5">5 Oyuncu</option>
+            </select>
+          </div>
+
+          <div id="players-setup-list" class="players-setup-grid">
+            <!-- Dinamik olarak JS tarafından doldurulacak -->
+          </div>
+
+          <button id="start-game-btn" class="cyber-btn primary big">Sistemi Yerel Başlat</button>
         </div>
 
-        <button id="start-game-btn" class="cyber-btn primary">Sistemi Başlat</button>
+        <!-- ONLINE MULTIPLAYER PANELİ -->
+        <div id="panel-online" class="tab-panel">
+          <div class="online-setup-grid">
+            <!-- Kurucu (Host) Bölümü -->
+            <div class="online-setup-box">
+              <h3>Oda Oluştur</h3>
+              <p>Yeni bir siber arena kurun ve arkadaşlarınızı çağırın.</p>
+              <div class="input-group">
+                <input type="text" id="host-nick" placeholder="Takma Adın" value="HostArda" maxlength="12">
+              </div>
+              <button id="create-room-btn" class="cyber-btn primary">Oda Oluştur (Host)</button>
+            </div>
+
+            <!-- Katılımcı (Client) Bölümü -->
+            <div class="online-setup-box">
+              <h3>Odaya Katıl</h3>
+              <p>Mevcut bir arenaya kod yazarak bağlanın.</p>
+              <div class="input-group">
+                <input type="text" id="join-nick" placeholder="Takma Adın" value="Misafir" maxlength="12">
+              </div>
+              <div class="input-group row-group">
+                <input type="text" id="join-room-id" placeholder="Oda Kodu (örn: F7-1234)" maxlength="15">
+                <button id="join-room-btn" class="cyber-btn success">Bağlan</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lobi Bekleme Odası (Lobby) -->
+          <div id="lobby-container" class="lobby-container" style="display: none;">
+            <div class="lobby-header">
+              <div class="room-code-display">
+                Oda Kodu: <strong id="lobby-room-code">-</strong>
+                <button id="copy-code-btn" class="cyber-btn warning small" title="Kodu Kopyala">📋</button>
+              </div>
+              <div id="connection-status-text" class="status-badge connecting">Ağ Bağlantısı Aranıyor...</div>
+            </div>
+            
+            <div class="lobby-body">
+              <h4>Bağlı Oyuncular (<span id="lobby-player-count">1</span>/5)</h4>
+              <div id="lobby-players-list" class="lobby-players-list">
+                <!-- Oyuncu etiketleri buraya -->
+              </div>
+            </div>
+
+            <div id="host-only-controls" class="lobby-footer" style="display: none;">
+              <div class="lobby-options">
+                <label for="lobby-ai-count">Lobiye AI Ekle:</label>
+                <select id="lobby-ai-count">
+                  <option value="0" selected>Yapay Zeka Ekleme</option>
+                  <option value="1">1 AI Ekle</option>
+                  <option value="2">2 AI Ekle</option>
+                  <option value="3">3 AI Ekle</option>
+                  <option value="4">4 AI Ekle</option>
+                </select>
+              </div>
+              <button id="start-online-game-btn" class="cyber-btn success big" disabled>Siber Arenayı Başlat</button>
+            </div>
+            <div id="client-waiting-text" class="lobby-footer client-wait-msg" style="display: none;">
+              <span>Oda kurucunun oyunu başlatması bekleniyor...</span>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div class="glass-card rules-box">
@@ -63,6 +137,7 @@
         <div class="header-left">
           <h2 class="cyber-logo">⚡ FLIP 7 // ARENA</h2>
           <span class="round-indicator">Tur: <span id="round-num">1</span></span>
+          <span id="online-badge" class="round-indicator" style="display: none; background: rgba(57, 255, 20, 0.1); border-color: rgba(57, 255, 20, 0.3); color: var(--neon-green);">Çevrimiçi (Online)</span>
         </div>
         <div class="header-right">
           <button id="restart-game-btn" class="cyber-btn danger small">Ana Menü</button>

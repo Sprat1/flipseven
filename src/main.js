@@ -2,16 +2,31 @@
 
 import { Flip7Game } from './game.js';
 import { Flip7UI } from './ui.js';
+import { NetworkManager } from './network.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const game = new Flip7Game();
   const ui = new Flip7UI(game);
+  const network = new NetworkManager(game, ui);
   
-  // Hata ayıklama veya test amacıyla konsoldan erişim için global pencereye ekleyelim
+  // Arayüzün ağ yöneticisine erişimini sağla
+  ui.network = network;
+  
+  // Ağ durumu değişimlerini dinle ve lobi arayüzündeki bağlantı rozetini güncelle
+  network.statusCallback = (text, badgeClass) => {
+    const badge = ui.dom.connectionStatusText;
+    if (badge) {
+      badge.textContent = text;
+      badge.className = `status-badge ${badgeClass}`;
+    }
+  };
+
+  // Konsoldan kolay kontrol için global nesneye ekleyelim
   window.flip7 = {
     game,
-    ui
+    ui,
+    network
   };
   
-  console.log("⚔️ Flip 7 - Orta Çağ Hanı Oyunu başarıyla başlatıldı!");
+  console.log("⚔️ Flip 7 - Çevrimiçi Siber Arena başarıyla başlatıldı!");
 });

@@ -5,8 +5,9 @@ import { audio } from './audio.js';
 export class Flip7UI {
   constructor(game) {
     this.game = game;
+    this.network = null; // main.js tarafından sonradan atanacak
     this.prevLogCount = 0;
-    this.renderedCardIds = new Set(); // Aynı kartların tekrar tekrar animasyon oynamasını engellemek için
+    this.renderedCardIds = new Set();
 
     // DOM Elemanları
     this.dom = {
@@ -16,6 +17,31 @@ export class Flip7UI {
       playerCountSelect: document.getElementById('player-count'),
       playersSetupList: document.getElementById('players-setup-list'),
       startGameBtn: document.getElementById('start-game-btn'),
+      
+      // Çevrimiçi Sekme ve Panelleri
+      tabLocalBtn: document.getElementById('tab-local-btn'),
+      tabOnlineBtn: document.getElementById('tab-online-btn'),
+      panelLocal: document.getElementById('panel-local'),
+      panelOnline: document.getElementById('panel-online'),
+      
+      // Online Kurulum Elemanları
+      hostNick: document.getElementById('host-nick'),
+      createRoomBtn: document.getElementById('create-room-btn'),
+      joinNick: document.getElementById('join-nick'),
+      joinRoomId: document.getElementById('join-room-id'),
+      joinRoomBtn: document.getElementById('join-room-btn'),
+      
+      // Lobi Elemanları
+      lobbyContainer: document.getElementById('lobby-container'),
+      lobbyRoomCode: document.getElementById('lobby-room-code'),
+      copyCodeBtn: document.getElementById('copy-code-btn'),
+      connectionStatusText: document.getElementById('connection-status-text'),
+      lobbyPlayerCount: document.getElementById('lobby-player-count'),
+      lobbyPlayersList: document.getElementById('lobby-players-list'),
+      hostOnlyControls: document.getElementById('host-only-controls'),
+      lobbyAiCount: document.getElementById('lobby-ai-count'),
+      startOnlineGameBtn: document.getElementById('start-online-game-btn'),
+      clientWaitingText: document.getElementById('client-waiting-text'),
       
       roundNum: document.getElementById('round-num'),
       playersBoards: document.getElementById('players-boards'),
@@ -50,39 +76,99 @@ export class Flip7UI {
 
   // 1. OLAY DİNLEYİCİLERİ (EVENT LISTENERS)
   initEventListeners() {
-    // Oyuncu sayısı seçildiğinde kurulum formunu güncelle
+    // Sekmeler arası geçiş
+    this.dom.tabLocalBtn.addEventListener('click', () => this.switchTab('local'));
+    this.dom.tabOnlineBtn.addEventListener('click', () => this.switchTab('online'));
+
+    // Oyuncu sayısı seçildiğinde yerel kurulum formunu güncelle
     this.dom.playerCountSelect.addEventListener('change', () => this.renderSetupRows());
 
-    // Oyunu Başlat
+    // Yerel Oyunu Başlat
     this.dom.startGameBtn.addEventListener('click', () => {
-      audio.init(); // Ses motorunu ilk tıklamada aktifleştir
+      audio.init();
       const configs = this.getPlayersSetupConfig();
       this.dom.setupScreen.classList.remove('active');
       this.dom.gameScreen.classList.add('active');
+      document.getElementById('online-badge').style.display = 'none';
       this.game.setupGame(configs);
     });
 
+    // --- ONLINE İŞLEMLERİ ---
+    
+    // Oda Oluştur
+    this.dom.createRoomBtn.addEventListener('click', () => {
+      const nick = this.dom.hostNick.value.trim() || 'HostArda';
+      audio.init();
+      this.network.createRoom(nick);
+    });
+
+    // Odaya Katıl
+    this.dom.joinRoomBtn.addEventListener('click', () => {
+      const nick = this.dom.joinNick.value.trim() || 'Misafir';
+      const code = this.dom.joinRoomId.value.trim();
+      if (!code) {
+        alert("Lütfen bir oda kodu girin!");
+        return;
+      }
+      audio.init();
+      this.network.joinRoom(nick, code);
+    });
+
+    // Oda Kodunu Kopyala
+    this.dom.copyCodeBtn.addEventListener('click', () => {
+      const code = this.dom.lobbyRoomCode.textContent;
+      if (code && code !== '-') {
+        navigator.clipboard.writeText(code);
+        alert("Oda kodu panoya kopyalandı: " + code);
+      }
+    });
+
+    // Çevrimiçi Oyunu Başlat (Sadece Host)
+    this.dom.startOnlineGameBtn.addEventListener('click', () => {
+      const aiCount = parseInt(this.dom.lobbyAiCount.value);
+      this.network.startOnlineGame(aiCount);
+    });
+
+    // --- OYUN İÇİ HAMLELERİ ---
+
     // Kart Çek (Hit)
     this.dom.hitBtn.addEventListener('click', () => {
-      this.game.playerHit(this.game.currentPlayerIndex);
+      if (this.isOnlineGame()) {
+        this.network.sendHit();
+      } else {
+        this.game.playerHit(this.game.currentPlayerIndex);
+      }
     });
 
     // Pas Geç (Stay)
     this.dom.stayBtn.addEventListener('click', () => {
-      this.game.playerStay(this.game.currentPlayerIndex);
+      if (this.isOnlineGame()) {
+        this.network.sendStay();
+      } else {
+        this.game.playerStay(this.game.currentPlayerIndex);
+      }
     });
 
-    // Desteden Kart Çekme Tıklaması (Görsel Deste)
+    // Desteden Kart Çekme Tıklaması
     this.dom.drawDeck.addEventListener('click', () => {
-      const activePlayer = this.game.getCurrentPlayer();
-      if (activePlayer && !activePlayer.isAI && this.game.gameStatus === 'playing') {
-        this.game.playerHit(this.game.currentPlayerIndex);
+      if (this.isOnlineGame()) {
+        if (this.isMyTurn() && this.game.gameStatus === 'playing') {
+          this.network.sendHit();
+        }
+      } else {
+        const activePlayer = this.game.getCurrentPlayer();
+        if (activePlayer && !activePlayer.isAI && this.game.gameStatus === 'playing') {
+          this.game.playerHit(this.game.currentPlayerIndex);
+        }
       }
     });
 
     // Ana Menü (Restart)
     this.dom.restartGameBtn.addEventListener('click', () => {
-      if (confirm("Mevcut arena savaşını sonlandırıp ana menüye dönmek istediğinden emin misin?")) {
+      if (confirm("Mevcut arenayı sonlandırıp ana menüye dönmek istediğinden emin misin?")) {
+        if (this.isOnlineGame() && this.network.peer) {
+          this.network.peer.destroy();
+        }
         this.resetToSetup();
       }
     });
@@ -90,20 +176,99 @@ export class Flip7UI {
     // Yeni Tura Geç
     this.dom.nextRoundBtn.addEventListener('click', () => {
       this.dom.roundModal.classList.remove('active');
-      this.game.startRound();
+      if (this.isOnlineGame()) {
+        if (this.network.isHost) {
+          this.game.startRound();
+          this.network.broadcastGameState();
+        }
+      } else {
+        this.game.startRound();
+      }
     });
 
     // Yeniden Oyna
     this.dom.playAgainBtn.addEventListener('click', () => {
       this.dom.gameOverModal.classList.remove('active');
+      if (this.isOnlineGame() && this.network.peer) {
+        this.network.peer.destroy();
+      }
       this.resetToSetup();
     });
 
-    // Oyun durum değişikliklerini dinle
+    // Local oyun durumunu bağla
     this.game.onStateChange = (game) => this.render(game);
   }
 
-  // 2. GİRİŞ PANELİ SATIRLARI ÜRETİMİ
+  // Çevrimiçi oyun mu kontrolü
+  isOnlineGame() {
+    return this.network && this.network.peer && !this.network.peer.destroyed;
+  }
+
+  // Hamle sırası bende mi kontrolü
+  isMyTurn() {
+    if (!this.isOnlineGame()) return true;
+    if (this.network.isHost) {
+      return this.game.currentPlayerIndex === 0;
+    } else {
+      return this.game.currentPlayerIndex === this.network.myPlayerId;
+    }
+  }
+
+  // Sekmeler Arası Geçiş
+  switchTab(tab) {
+    if (tab === 'local') {
+      this.dom.tabLocalBtn.classList.add('active');
+      this.dom.tabOnlineBtn.classList.remove('active');
+      this.dom.panelLocal.classList.add('active');
+      this.dom.panelOnline.classList.remove('active');
+    } else {
+      this.dom.tabLocalBtn.classList.remove('active');
+      this.dom.tabOnlineBtn.classList.add('active');
+      this.dom.panelLocal.classList.remove('active');
+      this.dom.panelOnline.classList.add('active');
+    }
+  }
+
+  // Lobi Ekranını Güncelleme
+  updateLobby(roomCode, players, isHost) {
+    this.dom.lobbyContainer.style.display = 'block';
+    this.dom.lobbyRoomCode.textContent = roomCode;
+    this.dom.lobbyPlayerCount.textContent = players.length;
+    this.dom.lobbyPlayersList.innerHTML = '';
+
+    players.forEach(p => {
+      const tag = document.createElement('div');
+      tag.className = 'lobby-player-tag';
+      
+      const isMe = (isHost && p.id === 0) || (!isHost && p.id === this.network.myPlayerId);
+      
+      if (p.isHost) tag.classList.add('host');
+      if (isMe) tag.classList.add('me');
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = p.name + (isMe ? ' (Sen)' : '');
+
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = p.isHost ? 'HOST' : 'PLAYER';
+
+      tag.appendChild(nameSpan);
+      tag.appendChild(badge);
+      this.dom.lobbyPlayersList.appendChild(tag);
+    });
+
+    if (isHost) {
+      this.dom.hostOnlyControls.style.display = 'flex';
+      this.dom.clientWaitingText.style.display = 'none';
+      // En az 2 oyuncu olunca oyunu başlatma aktifleşir
+      this.dom.startOnlineGameBtn.disabled = players.length < 2;
+    } else {
+      this.dom.hostOnlyControls.style.display = 'none';
+      this.dom.clientWaitingText.style.display = 'block';
+    }
+  }
+
+  // 2. GİRİŞ PANELİ SATIRLARI ÜRETİMİ (LOCAL)
   renderSetupRows() {
     const count = parseInt(this.dom.playerCountSelect.value);
     this.dom.playersSetupList.innerHTML = '';
@@ -146,7 +311,6 @@ export class Flip7UI {
     }
   }
 
-  // Giriş formundan verileri alıp yapılandırma dizisi oluşturur
   getPlayersSetupConfig() {
     const count = parseInt(this.dom.playerCountSelect.value);
     const configs = [];
@@ -163,12 +327,12 @@ export class Flip7UI {
     return configs;
   }
 
-  // Kurulum ekranına geri sıfırlama
   resetToSetup() {
     this.dom.gameScreen.classList.remove('active');
     this.dom.setupScreen.classList.add('active');
     this.dom.roundModal.classList.remove('active');
     this.dom.gameOverModal.classList.remove('active');
+    this.dom.lobbyContainer.style.display = 'none';
     this.renderedCardIds.clear();
     this.prevLogCount = 0;
   }
@@ -211,7 +375,15 @@ export class Flip7UI {
       if (p.isAI) nameTag.classList.add('ai-tag');
       
       const activePrefix = (p.id === game.currentPlayerIndex && game.gameStatus === 'playing') ? '⚡ ' : '';
-      nameTag.textContent = `${activePrefix}${p.name}`;
+      
+      // Online modda diğer oyuncuların adının sonuna (Siz) veya (AI) ekleyelim
+      let suffix = '';
+      if (this.isOnlineGame()) {
+        const isMe = (this.network.isHost && p.id === 0) || (!this.network.isHost && p.id === this.network.myPlayerId);
+        if (isMe) suffix = ' (Sen)';
+      }
+      
+      nameTag.textContent = `${activePrefix}${p.name}${suffix}`;
 
       const scoreSummary = document.createElement('div');
       scoreSummary.className = 'player-score-summary';
@@ -317,9 +489,23 @@ export class Flip7UI {
         this.dom.stayBtn.disabled = true;
         this.dom.turnInstructions.textContent = `💻 Yapay zeka sistem kartlarını analiz ediyor...`;
       } else {
-        this.dom.hitBtn.disabled = false;
-        this.dom.stayBtn.disabled = activePlayer.cards.length === 0;
-        this.dom.turnInstructions.textContent = `⚡ Karar senin! Desteden bir veri kartı çekebilir ya da puanını bankalayıp sıranı devredebilirsin.`;
+        // Çevrimiçi oyun kontrolü
+        if (this.isOnlineGame()) {
+          const isMyTurn = this.isMyTurn();
+          this.dom.hitBtn.disabled = !isMyTurn;
+          this.dom.stayBtn.disabled = !isMyTurn || activePlayer.cards.length === 0;
+          
+          if (isMyTurn) {
+            this.dom.turnInstructions.textContent = `⚡ SIRA SENDE! Desteden bir veri kartı çekebilir ya da puanını bankalayabilirsin.`;
+          } else {
+            this.dom.turnInstructions.textContent = `🛰️ Sıra ${activePlayer.name} adlı oyuncuda. Hamlesi bekleniyor...`;
+          }
+        } else {
+          // Yerel Oyun
+          this.dom.hitBtn.disabled = false;
+          this.dom.stayBtn.disabled = activePlayer.cards.length === 0;
+          this.dom.turnInstructions.textContent = `⚡ Karar senin! Desteden bir veri kartı çekebilir ya da puanını bankalayıp sıranı devredebilirsin.`;
+        }
       }
     } else {
       this.dom.hitBtn.disabled = true;
@@ -331,7 +517,18 @@ export class Flip7UI {
       } else if (game.gameStatus === 'action_resolution') {
         const sourceP = game.players[game.actionState.sourcePlayerId];
         this.dom.activePlayerName.textContent = sourceP.name;
-        this.dom.turnInstructions.textContent = `🔮 ${sourceP.name} aksiyon kartını çalıştırıyor...`;
+        
+        if (this.isOnlineGame()) {
+          const isMyAction = (this.network.isHost && game.actionState.sourcePlayerId === 0) || 
+                             (!this.network.isHost && game.actionState.sourcePlayerId === this.network.myPlayerId);
+          if (isMyAction) {
+            this.dom.turnInstructions.textContent = `🔮 AKSİYON KARTI ÇEKTİN! Ekrana gelen modal pencereden bir hedef seçmelisin.`;
+          } else {
+            this.dom.turnInstructions.textContent = `🔮 ${sourceP.name} aksiyon kartını çalıştırıyor. Hedef seçmesi bekleniyor...`;
+          }
+        } else {
+          this.dom.turnInstructions.textContent = `🔮 ${sourceP.name} aksiyon kartını çalıştırıyor...`;
+        }
       } else {
         this.dom.activePlayerName.textContent = "-";
         this.dom.turnInstructions.textContent = `Sistem beklemede.`;
@@ -374,6 +571,13 @@ export class Flip7UI {
 
       this.dom.targetButtons.innerHTML = '';
 
+      // Sıranın bende olup olmadığını kontrol et
+      let isMyAction = true;
+      if (this.isOnlineGame()) {
+        isMyAction = (this.network.isHost && game.actionState.sourcePlayerId === 0) || 
+                     (!this.network.isHost && game.actionState.sourcePlayerId === this.network.myPlayerId);
+      }
+
       game.players.forEach(p => {
         if ((card.value === 'freeze' || card.value === 'flip_three')) {
           const activeRivals = game.players.filter(x => x.id !== sourcePlayer.id && x.status === 'active');
@@ -390,12 +594,17 @@ export class Flip7UI {
         btn.className = 'cyber-btn primary';
         btn.textContent = p.id === sourcePlayer.id ? `Kendim (${p.name})` : p.name;
         
-        if (sourcePlayer.isAI) {
+        // Eğer aksiyon benim değilse veya AI ise butonları kilitliyoruz
+        if (sourcePlayer.isAI || !isMyAction) {
           btn.disabled = true;
         }
 
         btn.addEventListener('click', () => {
-          game.resolveAction(p.id);
+          if (this.isOnlineGame()) {
+            this.network.sendResolveAction(p.id);
+          } else {
+            game.resolveAction(p.id);
+          }
         });
 
         this.dom.targetButtons.appendChild(btn);
@@ -410,6 +619,15 @@ export class Flip7UI {
     if (game.gameStatus === 'round_summary') {
       this.dom.roundSummaryTbody.innerHTML = '';
       
+      // Sadece host tura geçebilir butonu aktif olur online'da
+      if (this.isOnlineGame()) {
+        this.dom.nextRoundBtn.disabled = !this.network.isHost;
+        this.dom.nextRoundBtn.textContent = this.network.isHost ? 'Sıradaki Tura Geç' : 'Oda Kurucu Bekleniyor...';
+      } else {
+        this.dom.nextRoundBtn.disabled = false;
+        this.dom.nextRoundBtn.textContent = 'Sıradaki Tura Geç';
+      }
+
       game.players.forEach(p => {
         const tr = document.createElement('tr');
         
@@ -475,7 +693,7 @@ export class Flip7UI {
       const latestLog = game.logs[0];
       
       if (latestLog) {
-        if (latestLog.type === 'bust') {
+        if (latestLog.type === 'down' || latestLog.type === 'bust') {
           audio.playBust();
           document.body.classList.add('shake-screen');
           setTimeout(() => {
