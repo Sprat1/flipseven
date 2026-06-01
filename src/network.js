@@ -63,6 +63,9 @@ export class NetworkManager {
       } else {
         alert("Bağlantı Hatası: " + err.message);
         this.setStatus("Hata oluştu", "offline");
+        // Butonları tekrar aktif et
+        this.ui.dom.createRoomBtn.disabled = false;
+        this.ui.dom.joinRoomBtn.disabled = false;
       }
     });
 
@@ -232,6 +235,9 @@ export class NetworkManager {
       console.error("Bağlantı hatası:", err);
       alert("Oda bulunamadı veya bağlantı hatası oluştu.");
       this.setStatus("Bağlantı Başarısız", "offline");
+      // Butonları tekrar aktif et
+      this.ui.dom.createRoomBtn.disabled = false;
+      this.ui.dom.joinRoomBtn.disabled = false;
     });
   }
 

@@ -99,6 +99,8 @@ export class Flip7UI {
     this.dom.createRoomBtn.addEventListener('click', () => {
       const nick = this.dom.hostNick.value.trim() || 'HostArda';
       audio.init();
+      this.dom.createRoomBtn.disabled = true;
+      this.dom.joinRoomBtn.disabled = true;
       this.network.createRoom(nick);
     });
 
@@ -111,6 +113,8 @@ export class Flip7UI {
         return;
       }
       audio.init();
+      this.dom.createRoomBtn.disabled = true;
+      this.dom.joinRoomBtn.disabled = true;
       this.network.joinRoom(nick, code);
     });
 
@@ -233,6 +237,11 @@ export class Flip7UI {
   // Lobi Ekranını Güncelleme
   updateLobby(roomCode, players, isHost) {
     this.dom.lobbyContainer.style.display = 'block';
+    
+    // Aynı ekrandan tekrar oda açmayı/katılmayı engellemek için form alanını gizliyoruz
+    const setupGrid = document.querySelector('.online-setup-grid');
+    if (setupGrid) setupGrid.style.display = 'none';
+
     this.dom.lobbyRoomCode.textContent = roomCode;
     this.dom.lobbyPlayerCount.textContent = players.length;
     this.dom.lobbyPlayersList.innerHTML = '';
@@ -334,6 +343,13 @@ export class Flip7UI {
     this.dom.roundModal.classList.remove('active');
     this.dom.gameOverModal.classList.remove('active');
     this.dom.lobbyContainer.style.display = 'none';
+    
+    // Kurulum formunu ve kilitli butonları sıfırla
+    const setupGrid = document.querySelector('.online-setup-grid');
+    if (setupGrid) setupGrid.style.display = 'grid';
+    this.dom.createRoomBtn.disabled = false;
+    this.dom.joinRoomBtn.disabled = false;
+    
     this.renderedCardIds.clear();
     this.prevLogCount = 0;
   }
