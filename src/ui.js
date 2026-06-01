@@ -519,16 +519,21 @@ export class Flip7UI {
         const sourceP = game.players[game.actionState.sourcePlayerId];
         this.dom.activePlayerName.textContent = sourceP.name;
         
-        if (this.isOnlineGame()) {
-          const isMyAction = (this.network.isHost && game.actionState.sourcePlayerId === 0) || 
-                             (!this.network.isHost && game.actionState.sourcePlayerId === this.network.myPlayerId);
-          if (isMyAction) {
-            this.dom.turnInstructions.textContent = `🔮 AKSİYON KARTI ÇEKTİN! Ekrana gelen modal pencereden bir hedef seçmelisin.`;
-          } else {
-            this.dom.turnInstructions.textContent = `🔮 ${sourceP.name} aksiyon kartını çalıştırıyor. Hedef seçmesi bekleniyor...`;
-          }
+        if (game.actionState && game.actionState.flipsRemaining > 0) {
+          const targetP = game.players[game.actionState.targetPlayerId];
+          this.dom.turnInstructions.textContent = `⚔️ ${sourceP.name}, ${targetP.name} adlı oyuncuya 3 kart çektiriyor (${game.actionState.flipsRemaining} kart kaldı)...`;
         } else {
-          this.dom.turnInstructions.textContent = `🔮 ${sourceP.name} aksiyon kartını çalıştırıyor...`;
+          if (this.isOnlineGame()) {
+            const isMyAction = (this.network.isHost && game.actionState.sourcePlayerId === 0) || 
+                               (!this.network.isHost && game.actionState.sourcePlayerId === this.network.myPlayerId);
+            if (isMyAction) {
+              this.dom.turnInstructions.textContent = `🔮 AKSİYON KARTI ÇEKTİN! Ekrana gelen modal pencereden bir hedef seçmelisin.`;
+            } else {
+              this.dom.turnInstructions.textContent = `🔮 ${sourceP.name} aksiyon kartını çalıştırıyor. Hedef seçmesi bekleniyor...`;
+            }
+          } else {
+            this.dom.turnInstructions.textContent = `🔮 ${sourceP.name} aksiyon kartını çalıştırıyor...`;
+          }
         }
       } else {
         this.dom.activePlayerName.textContent = "-";

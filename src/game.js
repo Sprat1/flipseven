@@ -306,7 +306,9 @@ export class Flip7Game {
       }
       
       this.stateChanged();
-      if (!isFlipThreeStep) {
+      if (isFlipThreeStep) {
+        this.continueFlipThree();
+      } else {
         this.moveToNextPlayer();
       }
     }
@@ -314,7 +316,9 @@ export class Flip7Game {
     // B) MODİFİKATÖR KARTLARI
     else if (card.type === 'modifier') {
       this.stateChanged();
-      if (!isFlipThreeStep) {
+      if (isFlipThreeStep) {
+        this.continueFlipThree();
+      } else {
         this.moveToNextPlayer();
       }
     }
@@ -326,7 +330,9 @@ export class Flip7Game {
           player.hasSecondChance = true;
           this.addLog(`${player.name} koruyucu İkinci Şans kalkanını aktif etti.`, 'normal');
           this.stateChanged();
-          if (!isFlipThreeStep) {
+          if (isFlipThreeStep) {
+            this.continueFlipThree();
+          } else {
             this.moveToNextPlayer();
           }
         } else {
@@ -410,6 +416,7 @@ export class Flip7Game {
     // C) FLIP THREE (3 KART ÇEKTİRME)
     else if (card.value === 'flip_three') {
       this.actionState.flipsRemaining = 3;
+      this.actionState.active = false; // Hedef seçildiği için modal penceresini kapatıyoruz
       this.addLog(`⚔️ ${targetPlayer.name} için 3 kart çekme testi başlatıldı!`, 'normal');
       this.continueFlipThree();
     }
