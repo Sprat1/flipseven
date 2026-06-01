@@ -326,17 +326,13 @@ export class Flip7Game {
     // C) AKSİYON KARTLARI
     else if (card.type === 'action') {
       if (card.value === 'second_chance') {
-        if (!player.hasSecondChance) {
-          player.hasSecondChance = true;
-          this.addLog(`${player.name} koruyucu İkinci Şans kalkanını aktif etti.`, 'normal');
-          this.stateChanged();
-          if (isFlipThreeStep) {
-            this.continueFlipThree();
-          } else {
-            this.moveToNextPlayer();
-          }
+        player.hasSecondChance = true;
+        this.addLog(`${player.name} koruyucu İkinci Şans kalkanını aktif etti.`, 'normal');
+        this.stateChanged();
+        if (isFlipThreeStep) {
+          this.continueFlipThree();
         } else {
-          this.enterActionResolution(player, card, isFlipThreeStep);
+          this.moveToNextPlayer();
         }
       } else {
         this.enterActionResolution(player, card, isFlipThreeStep);
