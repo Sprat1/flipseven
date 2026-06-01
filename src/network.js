@@ -302,6 +302,9 @@ export class NetworkManager {
       c.conn.send({ type: 'START_GAME' });
     });
     
+    // Host ekranını oyun alanına geçir
+    this.ui.dom.setupScreen.classList.remove('active');
+    this.ui.dom.gameScreen.classList.add('active');
     document.getElementById('online-badge').style.display = 'inline-block';
 
     // İlk oyun durumunu broadcast et
