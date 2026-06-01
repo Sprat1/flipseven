@@ -239,7 +239,7 @@ export class NetworkManager {
   handleClientReceivedData(data) {
     // A) ODAYA GİRİŞ ONAYI (JOIN_ACK)
     if (data.type === 'JOIN_ACK') {
-      this.myPlayerId = data.playerId;
+      this.myPlayerId = Number(data.playerId);
       this.setStatus("Bağlantı Stabil / Lobide", "online");
     }
     

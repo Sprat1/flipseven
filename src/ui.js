@@ -209,9 +209,9 @@ export class Flip7UI {
     const game = activeGame || this.game;
     if (!this.isOnlineGame()) return true;
     if (this.network.isHost) {
-      return game.currentPlayerIndex === 0;
+      return Number(game.currentPlayerIndex) === 0;
     } else {
-      return game.currentPlayerIndex === this.network.myPlayerId;
+      return Number(game.currentPlayerIndex) === Number(this.network.myPlayerId);
     }
   }
 
@@ -380,7 +380,7 @@ export class Flip7UI {
       // Online modda diğer oyuncuların adının sonuna (Siz) veya (AI) ekleyelim
       let suffix = '';
       if (this.isOnlineGame()) {
-        const isMe = (this.network.isHost && p.id === 0) || (!this.network.isHost && p.id === this.network.myPlayerId);
+        const isMe = (this.network.isHost && Number(p.id) === 0) || (!this.network.isHost && Number(p.id) === Number(this.network.myPlayerId));
         if (isMe) suffix = ' (Sen)';
       }
       
@@ -524,8 +524,10 @@ export class Flip7UI {
           this.dom.turnInstructions.textContent = `⚔️ ${sourceP.name}, ${targetP.name} adlı oyuncuya 3 kart çektiriyor (${game.actionState.flipsRemaining} kart kaldı)...`;
         } else {
           if (this.isOnlineGame()) {
-            const isMyAction = (this.network.isHost && game.actionState.sourcePlayerId === 0) || 
-                               (!this.network.isHost && game.actionState.sourcePlayerId === this.network.myPlayerId);
+            const sourceId = Number(game.actionState.sourcePlayerId);
+            const myId = Number(this.network.myPlayerId);
+            const isMyAction = (this.network.isHost && sourceId === 0) || 
+                               (!this.network.isHost && sourceId === myId);
             if (isMyAction) {
               this.dom.turnInstructions.textContent = `🔮 AKSİYON KARTI ÇEKTİN! Ekrana gelen modal pencereden bir hedef seçmelisin.`;
             } else {
@@ -580,8 +582,10 @@ export class Flip7UI {
       // Sıranın bende olup olmadığını kontrol et
       let isMyAction = true;
       if (this.isOnlineGame()) {
-        isMyAction = (this.network.isHost && game.actionState.sourcePlayerId === 0) || 
-                     (!this.network.isHost && game.actionState.sourcePlayerId === this.network.myPlayerId);
+        const sourceId = Number(game.actionState.sourcePlayerId);
+        const myId = Number(this.network.myPlayerId);
+        isMyAction = (this.network.isHost && sourceId === 0) || 
+                     (!this.network.isHost && sourceId === myId);
       }
 
       game.players.forEach(p => {
