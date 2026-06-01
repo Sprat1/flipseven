@@ -356,12 +356,29 @@ export class NetworkManager {
 
   // Client Host'tan gelen oyunu senkronize eder
   syncGameState(state) {
+    // Arayüz çözümlerken Card nesnesinin metodlarına ihtiyaç duyduğu için actionState.card'ı sarmalıyoruz
+    let syncedActionState = null;
+    if (state.actionState) {
+      syncedActionState = { ...state.actionState };
+      if (state.actionState.card) {
+        const c = state.actionState.card;
+        syncedActionState.card = {
+          id: c.id,
+          type: c.type,
+          value: c.value,
+          getDisplayValue: () => c.displayValue || c.value,
+          getDisplayName: () => c.displayName || c.value,
+          getStyleClass: () => c.styleClass || c.type
+        };
+      }
+    }
+
     // UI çizimini kolaylaştırmak için gelen state yapısını bir arayüz-oyun sınıfı gibi sararız
     const uiState = {
       roundNumber: state.roundNumber,
       currentPlayerIndex: state.currentPlayerIndex,
       gameStatus: state.gameStatus,
-      actionState: state.actionState,
+      actionState: syncedActionState,
       logs: state.logs,
       deck: { count: () => state.deckCount },
       players: state.players.map(p => {
