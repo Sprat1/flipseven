@@ -407,8 +407,19 @@ export class NetworkManager {
         score += plusMods;
         return score;
       },
-      getCurrentPlayer: () => state.players[state.currentPlayerIndex]
+      getCurrentPlayer: () => uiState.players[state.currentPlayerIndex]
     };
+
+    // Client'ın yerel game nesnesini de güncelle ki event listener'lar doğru çalışsın
+    this.game.roundNumber = uiState.roundNumber;
+    this.game.currentPlayerIndex = uiState.currentPlayerIndex;
+    this.game.gameStatus = uiState.gameStatus;
+    this.game.actionState = uiState.actionState;
+    this.game.logs = uiState.logs;
+    this.game.players = uiState.players;
+    this.game.deck = uiState.deck;
+    this.game.getCurrentPlayer = uiState.getCurrentPlayer;
+    this.game.calculateTempRoundScore = uiState.calculateTempRoundScore;
 
     // UI'a doğrudan bu mock state'i verip render etmesini söyleriz
     this.ui.render(uiState);

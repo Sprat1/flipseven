@@ -11,6 +11,17 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Arayüzün ağ yöneticisine erişimini sağla
   ui.network = network;
+
+  // Oyun durumunu ağ üzerinden de senkronize et
+  const originalOnStateChange = game.onStateChange;
+  game.onStateChange = (gameInstance) => {
+    if (originalOnStateChange) {
+      originalOnStateChange(gameInstance);
+    }
+    if (network.isHost) {
+      network.broadcastGameState();
+    }
+  };
   
   // Ağ durumu değişimlerini dinle ve lobi arayüzündeki bağlantı rozetini güncelle
   network.statusCallback = (text, badgeClass) => {

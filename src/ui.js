@@ -205,12 +205,13 @@ export class Flip7UI {
   }
 
   // Hamle sırası bende mi kontrolü
-  isMyTurn() {
+  isMyTurn(activeGame) {
+    const game = activeGame || this.game;
     if (!this.isOnlineGame()) return true;
     if (this.network.isHost) {
-      return this.game.currentPlayerIndex === 0;
+      return game.currentPlayerIndex === 0;
     } else {
-      return this.game.currentPlayerIndex === this.network.myPlayerId;
+      return game.currentPlayerIndex === this.network.myPlayerId;
     }
   }
 
@@ -491,7 +492,7 @@ export class Flip7UI {
       } else {
         // Çevrimiçi oyun kontrolü
         if (this.isOnlineGame()) {
-          const isMyTurn = this.isMyTurn();
+          const isMyTurn = this.isMyTurn(game);
           this.dom.hitBtn.disabled = !isMyTurn;
           this.dom.stayBtn.disabled = !isMyTurn || activePlayer.cards.length === 0;
           
