@@ -28,10 +28,6 @@
 
 body {
   background-color: var(--bg-dark);
-  background-image: 
-    radial-gradient(circle at 80% 20%, rgba(161, 0, 255, 0.18) 0%, transparent 50%),
-    radial-gradient(circle at 10% 80%, rgba(0, 240, 255, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, var(--bg-dark-purple) 0%, var(--bg-dark) 100%);
   color: #f1f2f6;
   font-family: var(--font-cyber);
   min-height: 100vh;
@@ -45,12 +41,7 @@ body {
   top: 0; left: 0;
   width: 100vw; height: 100vh;
   pointer-events: none;
-  background: 
-    linear-gradient(rgba(18, 16, 35, 0) 50%, rgba(0, 240, 255, 0.03) 50%),
-    linear-gradient(90deg, rgba(255, 0, 127, 0.02), rgba(0, 240, 255, 0.02));
-  background-size: 100% 4px, 6px 100%;
   z-index: 1;
-  animation: scanlines 20s infinite linear;
 }
 
 @keyframes scanlines {
@@ -86,7 +77,6 @@ body {
   position: absolute;
   top: 0; left: -50%;
   width: 200%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
   transform: rotate(30deg);
   pointer-events: none;
   transition: 0.5s;
@@ -97,9 +87,7 @@ body {
   font-size: 3rem;
   text-align: center;
   letter-spacing: 2px;
-  background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-pink) 50%, var(--neon-purple) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--neon-blue);
   text-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
   margin-bottom: 8px;
 }
@@ -132,7 +120,7 @@ body {
 }
 
 .cyber-btn.primary {
-  background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+  background-color: var(--neon-purple);
   border-color: rgba(255, 0, 127, 0.4);
   box-shadow: 0 0 15px rgba(161, 0, 255, 0.3);
 }
@@ -142,7 +130,8 @@ body {
 }
 
 .cyber-btn.success {
-  background: linear-gradient(135deg, #00b894, var(--neon-green));
+  background-color: var(--neon-green);
+  color: #121420;
   border-color: rgba(57, 255, 20, 0.4);
   box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
 }
@@ -152,7 +141,7 @@ body {
 }
 
 .cyber-btn.warning {
-  background: linear-gradient(135deg, #e17055, var(--neon-yellow));
+  background-color: var(--neon-yellow);
   border-color: rgba(255, 234, 0, 0.4);
   box-shadow: 0 0 15px rgba(255, 234, 0, 0.2);
   color: #121420;
@@ -163,7 +152,7 @@ body {
 }
 
 .cyber-btn.danger {
-  background: linear-gradient(135deg, #d63031, var(--neon-red));
+  background-color: var(--neon-red);
   border-color: rgba(255, 56, 56, 0.4);
   box-shadow: 0 0 15px rgba(255, 56, 56, 0.3);
 }
@@ -340,10 +329,7 @@ body {
 .cyber-logo {
   font-weight: 800;
   font-size: 1.6rem;
-  color: #fff;
-  background: linear-gradient(to right, #fff, var(--neon-blue));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--neon-blue);
 }
 
 .round-indicator {
@@ -593,10 +579,7 @@ body {
 
 /* Kart Arkası */
 .card-back {
-  background-color: #121422;
-  background-image: 
-    radial-gradient(circle, var(--neon-purple) 20%, transparent 60%),
-    repeating-linear-gradient(45deg, rgba(255,0,127,0.1) 0px, rgba(255,0,127,0.1) 8px, transparent 8px, transparent 16px);
+  background-color: #1a1b2d;
   border: 2px solid var(--neon-purple);
   color: var(--neon-pink);
   align-items: center;
@@ -618,7 +601,7 @@ body {
 /* Sayı Kartları - Neon Mavi Tasarım */
 .card-front.number-card {
   border-color: var(--neon-blue);
-  background: radial-gradient(circle at 50% 50%, #151d30 0%, #0d1220 100%);
+  background-color: #0d1220;
   box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
 }
 
@@ -632,19 +615,19 @@ body {
 
 /* Aksiyon Kartları */
 .card-front.action-card {
-  background: radial-gradient(circle, #25091a 0%, #10020a 100%);
+  background-color: #10020a;
   border-color: var(--neon-pink);
   box-shadow: 0 0 8px rgba(255, 0, 127, 0.15);
 }
 
 .card-front.action-card.freeze {
-  background: radial-gradient(circle, #021a2c 0%, #000c16 100%);
+  background-color: #000c16;
   border-color: var(--neon-blue);
   box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
 }
 
 .card-front.action-card.second-chance {
-  background: radial-gradient(circle, #05260c 0%, #011204 100%);
+  background-color: #011204;
   border-color: var(--neon-green);
   box-shadow: 0 0 8px rgba(57, 255, 20, 0.15);
 }
@@ -666,7 +649,7 @@ body {
 
 /* Modifikatörler (Çarpan ve Artılar) */
 .card-front.modifier-card {
-  background: radial-gradient(circle, #2a290a 0%, #121202 100%);
+  background-color: #121202;
   border-color: var(--neon-yellow);
   box-shadow: 0 0 8px rgba(255, 234, 0, 0.15);
 }
@@ -725,9 +708,6 @@ body {
 .deck-pile .deck-back {
   width: 100%; height: 100%;
   background-color: #0b0216;
-  background-image: 
-    radial-gradient(circle, var(--neon-purple) 20%, transparent 60%),
-    repeating-linear-gradient(45deg, rgba(0, 240, 255, 0.1) 0px, rgba(0, 240, 255, 0.1) 8px, transparent 8px, transparent 16px);
   border: 2px solid var(--neon-blue);
   border-radius: 8px;
   display: flex;
@@ -917,9 +897,7 @@ body {
 }
 
 .neon-text {
-  background: linear-gradient(to right, var(--neon-blue), var(--neon-pink));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--neon-pink);
   font-weight: 800;
   font-size: 2.2rem;
   letter-spacing: 1px;
