@@ -606,8 +606,7 @@ export class Flip7UI {
 
       game.players.forEach(p => {
         if ((card.value === 'freeze' || card.value === 'flip_three')) {
-          const activeRivals = game.players.filter(x => x.id !== sourcePlayer.id && x.status === 'active');
-          if (activeRivals.length > 0 && p.id === sourcePlayer.id) return;
+          // Kural: kendini veya herhangi bir aktif oyuncuyu hedefleyebilirsin (kendini dondurmak geçerli bir hamledir)
           if (p.status !== 'active') return;
         }
         
@@ -719,7 +718,7 @@ export class Flip7UI {
       const latestLog = game.logs[0];
       
       if (latestLog) {
-        if (latestLog.type === 'down' || latestLog.type === 'bust') {
+        if (latestLog.type === 'bust') {
           audio.playBust();
           document.body.classList.add('shake-screen');
           setTimeout(() => {

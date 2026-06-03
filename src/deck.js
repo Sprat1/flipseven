@@ -54,7 +54,7 @@ export class Card {
       return this.value === 'x2' ? 'modifier-card multiplier' : 'modifier-card plus';
     }
     if (this.type === 'action') {
-      return `action-card ${this.value.replace('_', '-')}`;
+      return `action-card ${this.value.replace(/_/g, '-')}`;
     }
     return '';
   }
