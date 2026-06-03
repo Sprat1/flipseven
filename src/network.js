@@ -17,8 +17,29 @@ export class NetworkManager {
     
     // Lobi oyuncu listesi
     this.lobbyPlayers = [];
-    
+
+    // Katılım (join) için bağlantı zaman aşımı zamanlayıcısı
+    this.connectTimeout = null;
+
     this.statusCallback = () => {};
+
+    // PeerJS / WebRTC ICE yapılandırması.
+    // Varsayılan PeerJS TURN'ü yalnızca UDP 3478 kullanır; kurumsal güvenlik
+    // duvarları bunu engeller. TCP/443 ve TLS üzerinden TURN ekleyerek kısıtlı
+    // ağlarda da bağlantı kurulabilmesini sağlıyoruz.
+    // Not: openrelay ücretsiz/genel bir TURN servisidir; üretimde kendi TURN
+    // sunucunuzu kullanmanız daha güvenilir olur.
+    this.peerConfig = {
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:openrelay.metered.ca:80' },
+          { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+        ]
+      }
+    };
   }
 
   setStatus(text, badgeClass) {
@@ -48,7 +69,7 @@ export class NetworkManager {
     this.setStatus("Ağ sunucusuna bağlanılıyor...", "connecting");
     
     // PeerJS İstemcisi Başlatılıyor
-    this.peer = new Peer(this.peerId);
+    this.peer = new Peer(this.peerId, this.peerConfig);
     
     this.peer.on('open', (id) => {
       this.setStatus("Lobi Aktif / Bağlantı Hazır", "online");
@@ -197,16 +218,29 @@ export class NetworkManager {
     this.peerId = `flip7-arena-client-${Math.random().toString(36).substr(2, 5)}`;
     
     this.setStatus("Siber ağa bağlanılıyor...", "connecting");
-    
-    this.peer = new Peer(this.peerId);
-    
+
+    this.peer = new Peer(this.peerId, this.peerConfig);
+
+    // Bağlantı 18 sn içinde kurulamazsa: WebRTC engellenmiş/oda yok demektir.
+    // Kullanıcıyı "Odaya bağlanılıyor"da sonsuza dek bekletmek yerine net hata göster.
+    this.connectTimeout = setTimeout(() => {
+      if (!this.hostConn || !this.hostConn.open) {
+        this.abortJoin(
+          "Odaya bağlanılamadı. Oda kodu yanlış olabilir ya da ağınız/güvenlik " +
+          "duvarınız WebRTC (P2P) bağlantısını engelliyor olabilir. Farklı bir ağ " +
+          "(örn. mobil hotspot) deneyebilir veya oda kodunu kontrol edebilirsiniz."
+        );
+      }
+    }, 18000);
+
     this.peer.on('open', () => {
       const hostPeerId = `flip7-arena-${this.roomId}`;
       this.setStatus(`Odaya bağlanılıyor: ${this.roomId}`, "connecting");
-      
+
       this.hostConn = this.peer.connect(hostPeerId);
-      
+
       this.hostConn.on('open', () => {
+        clearTimeout(this.connectTimeout);
         this.setStatus("Odaya Bağlanıldı. Giriş yapılıyor...", "connecting");
         // JOIN talebi gönder
         this.hostConn.send({
@@ -220,25 +254,43 @@ export class NetworkManager {
       });
 
       this.hostConn.on('close', () => {
+        clearTimeout(this.connectTimeout);
         alert("Oda kurucu bağlantıyı kesti veya oda kapandı.");
         window.location.reload();
       });
 
       this.hostConn.on('error', (err) => {
         console.error("Bağlantı koptu:", err);
-        alert("Oda bağlantısı koptu.");
-        window.location.reload();
+        // Henüz hiç bağlanamadıysak: oda yok / WebRTC engelli. Sayfayı yenilemek
+        // yerine net hata gösterip formu tekrar aktif et.
+        if (!this.hostConn.open) {
+          this.abortJoin("Odaya bağlanılamadı. Oda kodunu ve ağ bağlantınızı kontrol edin.");
+        } else {
+          alert("Oda bağlantısı koptu.");
+          window.location.reload();
+        }
       });
     });
 
     this.peer.on('error', (err) => {
       console.error("Bağlantı hatası:", err);
-      alert("Oda bulunamadı veya bağlantı hatası oluştu.");
-      this.setStatus("Bağlantı Başarısız", "offline");
-      // Butonları tekrar aktif et
-      this.ui.dom.createRoomBtn.disabled = false;
-      this.ui.dom.joinRoomBtn.disabled = false;
+      // 'peer-unavailable' => girilen oda kodunda host yok
+      const msg = (err.type === 'peer-unavailable')
+        ? `"${this.roomId}" kodlu bir oda bulunamadı. Oda kodunu kontrol edin.`
+        : "Bağlantı hatası oluştu: " + (err.message || err.type || err);
+      this.abortJoin(msg);
     });
+  }
+
+  // Katılım denemesini iptal et: zamanlayıcıyı temizle, peer'ı kapat,
+  // hata göster ve kurulum butonlarını tekrar aktif et.
+  abortJoin(message) {
+    clearTimeout(this.connectTimeout);
+    this.setStatus("Bağlantı Başarısız", "offline");
+    try { this.peer && this.peer.destroy(); } catch (e) { /* yoksay */ }
+    this.ui.dom.createRoomBtn.disabled = false;
+    this.ui.dom.joinRoomBtn.disabled = false;
+    alert(message);
   }
 
   // Client'ın gelen verileri işlediği kısım
