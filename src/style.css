@@ -610,7 +610,9 @@ select option {
   color: var(--neon-pink);
   align-items: center;
   justify-content: center;
-  font-size: 2.2rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
   text-shadow: 0 0 10px var(--neon-pink);
 }
 
@@ -672,6 +674,20 @@ select option {
 .card-front.action-card.freeze .card-title { color: var(--neon-blue); }
 .card-front.action-card.flip-three .card-title { color: var(--neon-pink); }
 .card-front.action-card.second-chance .card-title { color: var(--neon-green); }
+
+/* Aksiyon kartı yüzünde emoji yerine kartın adı (ortada) */
+.card-front.action-card .card-value.action-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0 3px;
+  margin-top: 0;
+}
+.card-front.action-card.freeze .card-value.action-name { color: var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); }
+.card-front.action-card.flip-three .card-value.action-name { color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink); }
+.card-front.action-card.second-chance .card-value.action-name { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
 
 /* Modifikatörler (Çarpan ve Artılar) */
 .card-front.modifier-card {

@@ -80,7 +80,7 @@
             <div class="lobby-header">
               <div class="room-code-display">
                 Oda Kodu: <strong id="lobby-room-code">-</strong>
-                <button id="copy-code-btn" class="cyber-btn warning small" title="Kodu Kopyala">📋</button>
+                <button id="copy-code-btn" class="cyber-btn warning small" title="Kodu Kopyala">Kopyala</button>
               </div>
               <div id="connection-status-text" class="status-badge connecting">Ağ Bağlantısı Aranıyor...</div>
             </div>
@@ -116,14 +116,14 @@
         <h2 class="section-title">Sistem Kuralları</h2>
         <ul class="rules-list">
           <li><strong>Amaç:</strong> Kart çekerek <strong>200 puana</strong> ulaşan ilk oyuncu olmak.</li>
-          <li><strong>Sıran Geldiğinde:</strong> <strong>Kart Çek (Hit)</strong> veya <strong>Pas Geç / Bankala (Stay)</strong>.</li>
+          <li><strong>Sıran Geldiğinde:</strong> <strong>Kart Çek</strong> veya <strong>Pas Geç</strong>.</li>
           <li><strong>Yanmak (Bust):</strong> Önünde duran sayı kartlarından herhangi birinin <em>aynısını</em> çekersen sistem hata verir, yanarsın, turun biter ve bu el <strong>0 puan</strong> alırsın!</li>
           <li><strong>Flip 7 Bonusu:</strong> Yanmadan <strong>7 farklı sayı kartı</strong> biriktirirsen tur anında biter ve fazladan <strong>+15 Bonus Puan</strong> alırsın!</li>
           <li><strong>Aksiyon Kartları:</strong>
             <ul>
-              <li>❄️ <strong>Dondur (Freeze):</strong> Seçilen rakibi pas geçmeye zorlar, o tur kilitlenir.</li>
-              <li>⚔️ <strong>3 Kart Çektir (Flip Three):</strong> Seçilen rakibe sırayla 3 kart çektirir (yanma ihtimali yüksek!).</li>
-              <li>🛡️ <strong>İkinci Şans (Second Chance):</strong> Yanmanı bir kereliğine önler (kalkan gibi çalışır, tetiklendiğinde elden çıkar).</li>
+              <li><strong>Dondur:</strong> Seçilen oyuncuyu pas geçmeye zorlar, o tur kilitlenir (başka aktif oyuncu yoksa kendine uygulanır).</li>
+              <li><strong>3 Kart Çektir:</strong> Seçilen oyuncuya sırayla 3 kart çektirir (yanma ihtimali yüksek!).</li>
+              <li><strong>İkinci Şans:</strong> Yanmanı bir kereliğine önler (tetiklendiğinde elden çıkar).</li>
             </ul>
           </li>
           <li><strong>Puanlama:</strong> Sayı toplamları × (varsa) 2 + modifikatörler (+2, +4 vb.) + (varsa) Flip 7 bonusu.</li>
@@ -176,7 +176,7 @@
 
           <!-- Sistem Logları (Log) -->
           <div class="log-box glass-card">
-            <h4 class="log-title">🛰️ Sistem Günlüğü</h4>
+            <h4 class="log-title">Oyun Günlüğü</h4>
             <div id="game-logs" class="logs-container">
               <!-- Oyun günlükleri buraya eklenecek -->
             </div>
@@ -189,7 +189,7 @@
   <!-- 3. HEDEF SEÇİM PENCERESİ (TARGET SELECTION MODAL) -->
   <div id="target-modal" class="modal-overlay">
     <div class="glass-card modal-content">
-      <h2 id="target-modal-title">🔮 Hedef Oyuncu Seç</h2>
+      <h2 id="target-modal-title">Hedef Oyuncu Seç</h2>
       <p id="target-modal-desc">Aktif kartın uygulanacağı hedefi belirleyin.</p>
       <div id="target-buttons" class="target-grid">
         <!-- Oyuncu butonları -->
@@ -227,9 +227,8 @@
   <!-- 5. OYUN BİTTİ EKRANI (GAME OVER MODAL) -->
   <div id="game-over-modal" class="modal-overlay">
     <div class="glass-card modal-content game-over-box">
-      <div class="trophy-icon">🏆</div>
-      <h1 class="neon-text">👾 Arena Şampiyonu! 👾</h1>
-      <p class="winner-announcement"><span id="winner-name">Oyuncu</span> tüm rakiplerini egale etti!</p>
+      <h1 class="neon-text">Arena Şampiyonu!</h1>
+      <p class="winner-announcement"><span id="winner-name">Oyuncu</span> tüm rakiplerini geçti!</p>
       
       <div class="winner-stats-box">
         <p>Kazanılan Toplam Puan: <strong id="winner-score">210</strong></p>

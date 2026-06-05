@@ -16,11 +16,12 @@ export class Card {
       return this.value; // '+2', 'x2' vb.
     }
     if (this.type === 'action') {
+      // Emoji yok; kartın kısa adı (kart yüzünde ve loglarda kullanılır)
       switch (this.value) {
-        case 'freeze': return '❄️';
-        case 'flip_three': return '⚔️';
-        case 'second_chance': return '🛡️';
-        default: return '🔮';
+        case 'freeze': return 'Dondur';
+        case 'flip_three': return '3 Çek';
+        case 'second_chance': return 'İkinci Şans';
+        default: return 'Aksiyon';
       }
     }
     return '';

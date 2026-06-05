@@ -418,7 +418,7 @@ export class Flip7UI {
       if (p.hasSecondChance) {
         const scShield = document.createElement('span');
         scShield.className = 'second-chance-shield';
-        scShield.textContent = '🛡️ İkinci Şans';
+        scShield.textContent = 'İkinci Şans';
         infoRow.appendChild(scShield);
       }
 
@@ -445,35 +445,32 @@ export class Flip7UI {
         // Kartın Arkası
         const cardBack = document.createElement('div');
         cardBack.className = 'card-back';
-        cardBack.textContent = '👾';
+        cardBack.textContent = 'Flip';
 
         // Kartın Önü
         const cardFront = document.createElement('div');
         cardFront.className = `card-front ${card.getStyleClass()}`;
 
-        // Kart İkonu (üst köşe)
+        // Kart İkonu (üst köşe) — aksiyon kartlarında ikon yok
         const icon = document.createElement('div');
         icon.className = 'card-icon';
-        icon.textContent = card.getDisplayValue();
+        icon.textContent = card.type === 'action' ? '' : card.getDisplayValue();
 
         // Kart Değeri (orta büyük)
         const value = document.createElement('div');
-        
-        if (card.type === 'number') {
-          value.className = 'card-value';
-          value.textContent = card.value;
-        } else if (card.type === 'modifier') {
-          value.className = 'card-value';
+        value.className = 'card-value';
+        if (card.type === 'number' || card.type === 'modifier') {
           value.textContent = card.value;
         } else {
-          value.className = 'card-value';
-          value.textContent = card.getDisplayValue();
+          // Aksiyon kartı: emoji yerine kartın adı (renkle ayrışır)
+          value.textContent = card.getDisplayName();
+          value.classList.add('action-name');
         }
 
-        // Kart Başlığı (alt kısım)
+        // Kart Başlığı (alt kısım) — aksiyon kartlarında ad zaten ortada
         const title = document.createElement('div');
         title.className = 'card-title';
-        title.textContent = card.getDisplayName();
+        title.textContent = card.type === 'action' ? '' : card.getDisplayName();
 
         cardFront.appendChild(icon);
         cardFront.appendChild(value);
@@ -504,7 +501,7 @@ export class Flip7UI {
       if (activePlayer.isAI) {
         this.dom.hitBtn.disabled = true;
         this.dom.stayBtn.disabled = true;
-        this.dom.turnInstructions.textContent = `💻 Yapay zeka sistem kartlarını analiz ediyor...`;
+        this.dom.turnInstructions.textContent = `Yapay zeka kartları analiz ediyor...`;
       } else {
         // Çevrimiçi oyun kontrolü
         if (this.isOnlineGame()) {
@@ -513,15 +510,15 @@ export class Flip7UI {
           this.dom.stayBtn.disabled = !isMyTurn || activePlayer.cards.length === 0;
           
           if (isMyTurn) {
-            this.dom.turnInstructions.textContent = `⚡ SIRA SENDE! Desteden bir veri kartı çekebilir ya da puanını bankalayabilirsin.`;
+            this.dom.turnInstructions.textContent = `Sıra sende! Kart çekebilir ya da pas geçebilirsin.`;
           } else {
-            this.dom.turnInstructions.textContent = `🛰️ Sıra ${activePlayer.name} adlı oyuncuda. Hamlesi bekleniyor...`;
+            this.dom.turnInstructions.textContent = `Sıra ${activePlayer.name} oyuncusunda. Hamlesi bekleniyor...`;
           }
         } else {
           // Yerel Oyun
           this.dom.hitBtn.disabled = false;
           this.dom.stayBtn.disabled = activePlayer.cards.length === 0;
-          this.dom.turnInstructions.textContent = `⚡ Karar senin! Desteden bir veri kartı çekebilir ya da puanını bankalayıp sıranı devredebilirsin.`;
+          this.dom.turnInstructions.textContent = `Karar senin! Kart çekebilir ya da pas geçip sıranı devredebilirsin.`;
         }
       }
     } else {
@@ -530,14 +527,14 @@ export class Flip7UI {
       
       if (game.gameStatus === 'dealing') {
         this.dom.activePlayerName.textContent = "Sistem";
-        this.dom.turnInstructions.textContent = `🃏 Kartlar dağıtılıyor...`;
+        this.dom.turnInstructions.textContent = `Kartlar dağıtılıyor...`;
       } else if (game.gameStatus === 'action_resolution') {
         const sourceP = game.players[game.actionState.sourcePlayerId];
         this.dom.activePlayerName.textContent = sourceP.name;
         
         if (game.actionState && game.actionState.flipsRemaining > 0) {
           const targetP = game.players[game.actionState.targetPlayerId];
-          this.dom.turnInstructions.textContent = `⚔️ ${sourceP.name}, ${targetP.name} adlı oyuncuya 3 kart çektiriyor (${game.actionState.flipsRemaining} kart kaldı)...`;
+          this.dom.turnInstructions.textContent = `${sourceP.name}, ${targetP.name} oyuncusuna 3 kart çektiriyor (${game.actionState.flipsRemaining} kart kaldı)...`;
         } else {
           if (this.isOnlineGame()) {
             const sourceId = Number(game.actionState.sourcePlayerId);
@@ -545,12 +542,12 @@ export class Flip7UI {
             const isMyAction = (this.network.isHost && sourceId === 0) || 
                                (!this.network.isHost && sourceId === myId);
             if (isMyAction) {
-              this.dom.turnInstructions.textContent = `🔮 AKSİYON KARTI ÇEKTİN! Ekrana gelen modal pencereden bir hedef seçmelisin.`;
+              this.dom.turnInstructions.textContent = `Aksiyon kartı çektin! Açılan pencereden bir hedef seçmelisin.`;
             } else {
-              this.dom.turnInstructions.textContent = `🔮 ${sourceP.name} aksiyon kartını çalıştırıyor. Hedef seçmesi bekleniyor...`;
+              this.dom.turnInstructions.textContent = `${sourceP.name} aksiyon kartını kullanıyor. Hedef seçmesi bekleniyor...`;
             }
           } else {
-            this.dom.turnInstructions.textContent = `🔮 ${sourceP.name} aksiyon kartını çalıştırıyor...`;
+            this.dom.turnInstructions.textContent = `${sourceP.name} aksiyon kartını kullanıyor...`;
           }
         }
       } else {
@@ -583,7 +580,7 @@ export class Flip7UI {
       const sourcePlayer = game.players[game.actionState.sourcePlayerId];
       const card = game.actionState.card;
 
-      this.dom.targetModalTitle.textContent = `🔮 Kart Çözümlemesi: ${card.getDisplayName()}`;
+      this.dom.targetModalTitle.textContent = `Kart: ${card.getDisplayName()}`;
       
       if (card.value === 'freeze') {
         this.dom.targetModalDesc.textContent = `${sourcePlayer.name}, hangi rakibinin erişim kanalını kilitlemek (dondurmak) istersin?`;

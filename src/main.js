@@ -43,5 +43,5 @@ document.addEventListener('DOMContentLoaded', () => {
     network
   };
   
-  console.log("⚔️ Flip 7 - Çevrimiçi Siber Arena başarıyla başlatıldı!");
+  console.log("Flip 7 Arena başlatıldı.");
 });

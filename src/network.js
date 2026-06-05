@@ -143,7 +143,7 @@ export class NetworkManager {
         hostName: this.myNick
       });
 
-      this.game.addLog(`🛰️ ${data.name} odaya bağlandı.`, 'normal');
+      this.game.addLog(`${data.name} odaya bağlandı.`, 'normal');
 
       // Herkese lobi güncellemesini broadcast et
       this.broadcastLobbyUpdate();
@@ -180,7 +180,7 @@ export class NetworkManager {
     const idx = this.connections.findIndex(c => c.conn.peer === conn.peer);
     if (idx !== -1) {
       const disconnectedPlayer = this.connections[idx];
-      this.game.addLog(`🚨 ${disconnectedPlayer.name} bağlantısı koptu!`, 'bust');
+      this.game.addLog(`${disconnectedPlayer.name} bağlantısı koptu!`, 'bust');
       
       // Lobideysek lobiden çıkart
       this.lobbyPlayers = this.lobbyPlayers.filter(p => p.peerId !== conn.peer);

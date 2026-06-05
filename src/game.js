@@ -77,7 +77,7 @@ export class Flip7Game {
     const card = this.deck.draw();
     if (this.deck.reshuffled) {
       this.deck.reshuffled = false;
-      this.addLog(`🔄 Deste tükendi! Yeni karıştırılmış 94'lük deste oyuna girdi (kart sayacı sıfırlandı).`, 'normal');
+      this.addLog(`Deste tükendi! Yeni karıştırılmış 94'lük deste girdi (kart sayacı sıfırlandı).`, 'normal');
     }
     return card;
   }
@@ -99,7 +99,7 @@ export class Flip7Game {
     this.dealerIndex = 0;
     this.logs = [];
     
-    this.addLog("🚀 Flip 7 Arena protokolü başlatıldı! Sistem aktif.", 'normal');
+    this.addLog("Oyun başladı! İyi şanslar.", 'normal');
     this.startRound();
   }
 
@@ -113,7 +113,7 @@ export class Flip7Game {
     this.actionState.active = false;
     this.actionState.pendingActionsQueue = [];
 
-    this.addLog(`🛰️ Döngü ${this.roundNumber} başladı! Veri kartları aktarılıyor...`, 'normal');
+    this.addLog(`Tur ${this.roundNumber} başladı! Kartlar dağıtılıyor...`, 'normal');
     this.stateChanged();
 
     // İlk dağıtım döngüsü (Sırayla 1'er kart dağıtılır)
@@ -129,18 +129,18 @@ export class Flip7Game {
       const card = this.drawCard();
       player.cards.push(card);
       
-      this.addLog(`${player.name} başlangıç verisi olarak ${card.getDisplayName()} (${card.getDisplayValue()}) kartını aldı.`, 'normal');
+      this.addLog(`${player.name} başlangıç kartını aldı: ${card.getDisplayName()}`, 'normal');
       this.stateChanged();
 
       // second_chance dağıtımda direkt uygulanır
       if (card.type === 'action' && card.value === 'second_chance') {
         player.hasSecondChance = true;
-        this.addLog(`🛡️ ${player.name} başlangıç verisi olarak İkinci Şans kalkanını aldı, otomatik aktif edildi!`, 'normal');
+        this.addLog(`${player.name} başlangıçta İkinci Şans kartını aldı, otomatik aktif edildi.`, 'normal');
         this.stateChanged();
       }
       // Diğer aksiyon kartları dağıtımı durdurur ve çözüm bekler
       else if (card.type === 'action') {
-        this.addLog(`🚨 Dağıtım sırasında aksiyon tetiklendi! ${player.name} aksiyon kartını çalıştırıyor.`, 'normal');
+        this.addLog(`Dağıtımda aksiyon kartı çıktı! ${player.name} kartı kullanıyor.`, 'normal');
         this.gameStatus = 'action_resolution';
         this.actionState = {
           active: true,
@@ -183,15 +183,15 @@ export class Flip7Game {
       if (player.cards.length === 0) {
         const card = this.drawCard();
         player.cards.push(card);
-        this.addLog(`${player.name} başlangıç verisi olarak ${card.getDisplayName()} (${card.getDisplayValue()}) kartını aldı.`, 'normal');
+        this.addLog(`${player.name} başlangıç kartını aldı: ${card.getDisplayName()}`, 'normal');
         this.stateChanged();
 
         if (card.type === 'action' && card.value === 'second_chance') {
           player.hasSecondChance = true;
-          this.addLog(`🛡️ ${player.name} başlangıç verisi olarak İkinci Şans kalkanını aldı, otomatik aktif edildi!`, 'normal');
+          this.addLog(`${player.name} başlangıçta İkinci Şans kartını aldı, otomatik aktif edildi.`, 'normal');
           this.stateChanged();
         } else if (card.type === 'action') {
-          this.addLog(`🚨 Dağıtım sırasında aksiyon tetiklendi! ${player.name} aksiyon kartını çalıştırıyor.`, 'normal');
+          this.addLog(`Dağıtımda aksiyon kartı çıktı! ${player.name} kartı kullanıyor.`, 'normal');
           this.gameStatus = 'action_resolution';
           this.actionState = {
             active: true,
@@ -247,7 +247,7 @@ export class Flip7Game {
     const player = this.players[playerId];
     const card = this.drawCard();
     
-    this.addLog(`${player.name} veri kartı yükledi: ${card.getDisplayName()} (${card.getDisplayValue()})`, 'normal');
+    this.addLog(`${player.name} kart çekti: ${card.getDisplayName()}`, 'normal');
     
     this.applyCardToPlayer(player, card);
   }
@@ -260,7 +260,7 @@ export class Flip7Game {
     const player = this.players[playerId];
     player.status = 'stayed';
     
-    this.addLog(`${player.name} pas geçerek mevcut veri skorunu kasaya kaydetti.`, 'stay');
+    this.addLog(`${player.name} pas geçti ve tur skorunu kaydetti.`, 'stay');
     this.moveToNextPlayer();
   }
 
@@ -283,7 +283,7 @@ export class Flip7Game {
             player.cards.splice(idxSC, 1);
           }
           
-          this.addLog(`🛡️ İkinci Şans koruma kalkanı devrede! ${player.name} sistem hatasından kurtuldu. Çift veri (${card.value}) ve kalkan kartı silindi.`, 'stay');
+          this.addLog(`İkinci Şans devrede! ${player.name} yanmaktan kurtuldu. Çift sayı (${card.value}) ve İkinci Şans kartı atıldı.`, 'stay');
           this.stateChanged();
 
           // Hit tamamlandı sayılır: Flip Three içindeyse devam et, değilse sıra sonraki oyuncuya geçer
@@ -296,7 +296,7 @@ export class Flip7Game {
         } else {
           // Yandı! (Bust)
           player.status = 'busted';
-          this.addLog(`⚡ CRITICAL ERROR // BUSTED! ${player.name} aynı sayı rününü (${card.value}) tekrar yükledi ve elendi!`, 'bust');
+          this.addLog(`${player.name} aynı sayıyı (${card.value}) tekrar çekti ve yandı!`, 'bust');
           this.stateChanged();
           
           if (isFlipThreeStep) {
@@ -311,7 +311,7 @@ export class Flip7Game {
       // Flip 7 kontrolü (7 benzersiz sayı)
       if (player.getUniqueNumbersCount() === 7) {
         player.isFlipped7 = true;
-        this.addLog(`🌈 MATRIX ALIGNED // FLIP 7! ${player.name} yanmadan 7 benzersiz kart topladı! Döngü sonlandırılıyor.`, 'flip7');
+        this.addLog(`FLIP 7! ${player.name} yanmadan 7 farklı sayı topladı! Tur bitiyor.`, 'flip7');
         this.stateChanged();
         this.endRound();
         return;
@@ -339,7 +339,7 @@ export class Flip7Game {
     else if (card.type === 'action') {
       if (card.value === 'second_chance') {
         player.hasSecondChance = true;
-        this.addLog(`${player.name} koruyucu İkinci Şans kalkanını aktif etti.`, 'normal');
+        this.addLog(`${player.name} İkinci Şans kartını aktif etti.`, 'normal');
         this.stateChanged();
         if (isFlipThreeStep) {
           this.continueFlipThree();
@@ -361,7 +361,7 @@ export class Flip7Game {
         card: card,
         sourcePlayerId: sourcePlayer.id
       });
-      this.addLog(`🔮 ${sourcePlayer.name} test çektirmesi sırasında başka bir aksiyon kartı (${card.getDisplayName()}) tetikledi, kuyruğa alındı.`, 'normal');
+      this.addLog(`${sourcePlayer.name} 3 çekme sırasında başka bir aksiyon kartı (${card.getDisplayName()}) çekti, sıraya alındı.`, 'normal');
       this.continueFlipThree();
       return;
     }
@@ -376,7 +376,7 @@ export class Flip7Game {
       pendingActionsQueue: []
     };
     
-    this.addLog(`🔮 ${sourcePlayer.name} aksiyon kartı tetikledi: ${card.getDisplayName()}. Hedef taranıyor...`, 'normal');
+    this.addLog(`${sourcePlayer.name} aksiyon kartı çekti: ${card.getDisplayName()}. Hedef seçiliyor...`, 'normal');
     this.stateChanged();
 
     // Başka geçerli hedef yoksa kurala göre otomatik çöz (kilitlenmeyi önler)
@@ -404,11 +404,11 @@ export class Flip7Game {
 
     if (source && source.status === 'active') {
       // Tek aktif oyuncu kaynak: kartı kendine uygulamak zorunda
-      this.addLog(`⚠️ Hedeflenecek başka aktif oyuncu yok; ${source.name} ${card.getDisplayName()} kartını kendine uygulamak zorunda.`, 'normal');
+      this.addLog(`Başka aktif oyuncu yok; ${source.name} ${card.getDisplayName()} kartını kendine uygulamak zorunda.`, 'normal');
       this.resolveAction(source.id);
     } else {
       // Kaynak da aktif değil (örn. Flip Three sırasında yandı) ve başka aktif yok: kart etkisiz düşer
-      this.addLog(`⚠️ ${card.getDisplayName()} için uygun hedef kalmadı, kart etkisiz kaldı.`, 'normal');
+      this.addLog(`${card.getDisplayName()} için uygun hedef kalmadı, kart etkisiz kaldı.`, 'normal');
       st.active = false;
       this.finishActionAndContinue();
     }
@@ -424,12 +424,12 @@ export class Flip7Game {
     const card = this.actionState.card;
     
     this.actionState.targetPlayerId = targetPlayerId;
-    this.addLog(`🔮 ${sourcePlayer.name}, ${card.getDisplayName()} kartını ${targetPlayer.name} üzerinde çalıştırıyor.`, 'normal');
+    this.addLog(`${sourcePlayer.name}, ${card.getDisplayName()} kartını ${targetPlayer.name} üzerinde kullanıyor.`, 'normal');
 
     // A) FREEZE (DONDURMA)
     if (card.value === 'freeze') {
       targetPlayer.status = 'frozen';
-      this.addLog(`❄️ ${targetPlayer.name} kilitlendi! Bu tur artık veri yükleyemez, puanı kilitlendi.`, 'freeze');
+      this.addLog(`${targetPlayer.name} donduruldu! Bu tur kart çekemez, skoru kilitlendi.`, 'freeze');
       this.actionState.active = false;
       
       this.finishActionAndContinue();
@@ -444,7 +444,7 @@ export class Flip7Game {
       targetPlayer.cards.push(card);
       targetPlayer.hasSecondChance = true;
       
-      this.addLog(`🛡️ ${sourcePlayer.name}, İkinci Şans koruma kartını ${targetPlayer.name} adlı oyuncuya transfer etti!`, 'normal');
+      this.addLog(`${sourcePlayer.name}, İkinci Şans kartını ${targetPlayer.name} oyuncusuna verdi.`, 'normal');
       this.actionState.active = false;
       
       this.finishActionAndContinue();
@@ -454,7 +454,7 @@ export class Flip7Game {
     else if (card.value === 'flip_three') {
       this.actionState.flipsRemaining = 3;
       this.actionState.active = false; // Hedef seçildiği için modal penceresini kapatıyoruz
-      this.addLog(`⚔️ ${targetPlayer.name} için 3 kart çekme testi başlatıldı!`, 'normal');
+      this.addLog(`${targetPlayer.name} için 3 kart çekme başladı!`, 'normal');
       this.continueFlipThree();
     }
   }
@@ -479,7 +479,7 @@ export class Flip7Game {
     await new Promise(resolve => setTimeout(resolve, 800));
     
     const drawnCard = this.drawCard();
-    this.addLog(`⚔️ (Test Yüklemesi) ${targetPlayer.name} desteden çekti: ${drawnCard.getDisplayName()} (${drawnCard.getDisplayValue()})`, 'normal');
+    this.addLog(`${targetPlayer.name} desteden çekti: ${drawnCard.getDisplayName()}`, 'normal');
     
     this.applyCardToPlayer(targetPlayer, drawnCard, true);
   }
@@ -499,7 +499,7 @@ export class Flip7Game {
   }
 
   endFlipThreeAction() {
-    this.addLog(`⚔️ Veri yükleme testi tamamlandı.`, 'normal');
+    this.addLog(`3 kart çekme tamamlandı.`, 'normal');
     
     if (this.actionState.pendingActionsQueue.length > 0) {
       const nextAct = this.actionState.pendingActionsQueue.shift();
@@ -513,7 +513,7 @@ export class Flip7Game {
         pendingActionsQueue: this.actionState.pendingActionsQueue
       };
       
-      this.addLog(`🔮 Kuyruktaki sıradaki aksiyon kartı çalıştırılıyor...`, 'normal');
+      this.addLog(`Sıradaki aksiyon kartı kullanılıyor...`, 'normal');
       this.stateChanged();
 
       // Başka geçerli hedef yoksa otomatik çöz (boş modal / kilitlenmeyi önler)
@@ -563,12 +563,12 @@ export class Flip7Game {
   // TUR SONU PUANLAMA
   endRound() {
     this.gameStatus = 'round_summary';
-    this.addLog(`🛰️ Döngü sonu! Veri skorları hesaplanıyor...`, 'normal');
+    this.addLog(`Tur bitti! Skorlar hesaplanıyor...`, 'normal');
 
     this.players.forEach(p => {
       if (p.status === 'busted') {
         p.roundScore = 0;
-        this.addLog(`❌ ${p.name} hata (Bust) aldığı için bu el skor alamadı.`, 'bust');
+        this.addLog(`${p.name} yandığı için bu turda puan alamadı.`, 'bust');
       } else {
         const numSum = p.cards
           .filter(c => c.type === 'number')
@@ -596,7 +596,7 @@ export class Flip7Game {
         p.roundScore = calculated;
         p.score += p.roundScore;
         
-        this.addLog(`🏅 ${p.name} bu döngüde ${p.roundScore} puan kazandı! (Toplam: ${p.score})`, 'stay');
+        this.addLog(`${p.name} bu turda ${p.roundScore} puan kazandı! (Toplam: ${p.score})`, 'stay');
       }
     });
 
@@ -609,9 +609,9 @@ export class Flip7Game {
       
       if (topPlayers.length === 1) {
         this.gameStatus = 'game_over';
-        this.addLog(`🏆 ARENA TAMAMLANDI! ${topPlayers[0].name} efsanevi 200 puan sınırını aşarak Arena Şampiyonu oldu!`, 'flip7');
+        this.addLog(`Oyun bitti! ${topPlayers[0].name} 200 puanı geçerek şampiyon oldu!`, 'flip7');
       } else {
-        this.addLog(`⚔️ Eşitlik var! En yüksek puanı (${topScore}) paylaşan kahramanlar arasında uzatma turu başlatılıyor...`, 'normal');
+        this.addLog(`Beraberlik! En yüksek puanı (${topScore}) paylaşan oyuncular için uzatma turu başlıyor...`, 'normal');
         this.roundNumber++;
         this.dealerIndex = (this.dealerIndex + 1) % this.players.length;
       }
@@ -657,7 +657,7 @@ export class Flip7Game {
     } else {
       if (wantsFlip7) {
         chooseHit = true;
-        this.addLog(`💻 AI Analizi (${ai.name}): Matrix hizalanmasına 1 kart kaldı! Riske girip son kartı deniyor...`, 'normal');
+        this.addLog(`${ai.name} (AI): Flip 7'ye 1 kart kaldı! Riski göze alıp çekiyor...`, 'normal');
       } else if (bustProb >= riskThreshold) {
         chooseHit = false;
       } else if (roundScore >= 35 && bustProb > 0.15) {
