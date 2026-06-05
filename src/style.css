@@ -622,6 +622,8 @@ select option {
   background-color: #121422;
   border: 2px solid #2d3436;
   align-items: center;
+  justify-content: center;
+  gap: 4px;
   text-align: center;
 }
 
@@ -637,7 +639,6 @@ select option {
   font-size: 2.1rem;
   color: #fff;
   text-shadow: 0 0 10px var(--neon-blue);
-  margin-top: 10px;
   font-weight: 800;
 }
 
@@ -701,7 +702,6 @@ select option {
   color: var(--neon-yellow);
   font-weight: 800;
   text-shadow: 0 0 10px var(--neon-yellow);
-  margin-top: 15px;
 }
 
 /* 8. KONTROL PANELİ (SAĞ BÖLÜM) */

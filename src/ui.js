@@ -451,11 +451,6 @@ export class Flip7UI {
         const cardFront = document.createElement('div');
         cardFront.className = `card-front ${card.getStyleClass()}`;
 
-        // Kart İkonu (üst köşe) — aksiyon kartlarında ikon yok
-        const icon = document.createElement('div');
-        icon.className = 'card-icon';
-        icon.textContent = card.type === 'action' ? '' : card.getDisplayValue();
-
         // Kart Değeri (orta büyük)
         const value = document.createElement('div');
         value.className = 'card-value';
@@ -472,7 +467,6 @@ export class Flip7UI {
         title.className = 'card-title';
         title.textContent = card.type === 'action' ? '' : card.getDisplayName();
 
-        cardFront.appendChild(icon);
         cardFront.appendChild(value);
         cardFront.appendChild(title);
 
