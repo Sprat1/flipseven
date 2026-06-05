@@ -3,8 +3,12 @@
 import { Flip7Game } from './game.js';
 import { Flip7UI } from './ui.js';
 import { NetworkManager } from './network.js';
+import { initDesignPanel } from './designPanel.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Tasarım paneli: yalnızca URL'de #design varsa açılır
+  initDesignPanel();
+
   const game = new Flip7Game();
   const ui = new Flip7UI(game);
   const network = new NetworkManager(game, ui);
