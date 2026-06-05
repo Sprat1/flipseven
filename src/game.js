@@ -368,11 +368,40 @@ export class Flip7Game {
     this.addLog(`🔮 ${sourcePlayer.name} aksiyon kartı tetikledi: ${card.getDisplayName()}. Hedef taranıyor...`, 'normal');
     this.stateChanged();
 
+    // Başka geçerli hedef yoksa kurala göre otomatik çöz (kilitlenmeyi önler)
+    if (this.maybeAutoResolveAction()) return;
+
     if (sourcePlayer.isAI) {
       setTimeout(() => {
         this.autoResolveAIAction();
       }, 1200);
     }
+  }
+
+  // Freeze/Flip Three için geçerli başka hedef kalmadığında otomatik çözümleme.
+  // Kural: tek aktif oyuncu kaynaksa kartı kendine uygulamak zorundadır.
+  // Döndürür: işlem otomatik çözüldüyse true (çağıran modal/AI adımını atlamalı).
+  maybeAutoResolveAction() {
+    const st = this.actionState;
+    if (!st || !st.active) return false;
+    const card = st.card;
+    if (card.value !== 'freeze' && card.value !== 'flip_three') return false;
+
+    const source = this.players[st.sourcePlayerId];
+    const otherActive = this.players.filter(p => p.id !== source.id && p.status === 'active');
+    if (otherActive.length > 0) return false; // İnsan/AI normal şekilde hedef seçsin
+
+    if (source && source.status === 'active') {
+      // Tek aktif oyuncu kaynak: kartı kendine uygulamak zorunda
+      this.addLog(`⚠️ Hedeflenecek başka aktif oyuncu yok; ${source.name} ${card.getDisplayName()} kartını kendine uygulamak zorunda.`, 'normal');
+      this.resolveAction(source.id);
+    } else {
+      // Kaynak da aktif değil (örn. Flip Three sırasında yandı) ve başka aktif yok: kart etkisiz düşer
+      this.addLog(`⚠️ ${card.getDisplayName()} için uygun hedef kalmadı, kart etkisiz kaldı.`, 'normal');
+      st.active = false;
+      this.finishActionAndContinue();
+    }
+    return true;
   }
 
   // 4. AKSİYON ÇÖZÜMLEME (RESOLVE ACTION)
@@ -475,7 +504,10 @@ export class Flip7Game {
       
       this.addLog(`🔮 Kuyruktaki sıradaki aksiyon kartı çalıştırılıyor...`, 'normal');
       this.stateChanged();
-      
+
+      // Başka geçerli hedef yoksa otomatik çöz (boş modal / kilitlenmeyi önler)
+      if (this.maybeAutoResolveAction()) return;
+
       if (this.players[nextAct.sourcePlayerId].isAI) {
         setTimeout(() => this.autoResolveAIAction(), 1200);
       }
