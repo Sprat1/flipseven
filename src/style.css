@@ -415,7 +415,7 @@ select option {
   border-color: var(--neon-blue);
 }
 .player-box.frozen::after {
-  content: '❄️ SYSTEM LOCKED';
+  content: 'SİSTEM KİLİTLENDİ';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0, 240, 255, 0.15);
@@ -437,7 +437,7 @@ select option {
   border-color: var(--neon-red);
 }
 .player-box.busted::after {
-  content: '⚡ CRITICAL ERROR // BUSTED';
+  content: 'KRİTİK HATA // YANDI';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0, 0, 0, 0.65);
@@ -459,7 +459,7 @@ select option {
   opacity: 0.6;
 }
 .player-box.stayed::after {
-  content: '🛡️ SECURED / STAYED';
+  content: 'GÜVENDE // PAS GEÇTİ';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(0, 0, 0, 0.15);
