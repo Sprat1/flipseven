@@ -153,6 +153,18 @@ body {
   transform: translateY(-2px);
 }
 
+/* Oyun içi "Pas Geç" butonu: "Kart Çek" (yeşil) ile ton farkını belirginleştir (turuncu) */
+#stay-btn {
+  background-color: #ff7a18;
+  border-color: rgba(255, 122, 24, 0.45);
+  box-shadow: 0 0 15px rgba(255, 122, 24, 0.3);
+  color: #1a0f02;
+}
+#stay-btn:hover {
+  box-shadow: 0 0 25px rgba(255, 122, 24, 0.7);
+  transform: translateY(-2px);
+}
+
 .cyber-btn.danger {
   background-color: var(--neon-red);
   border-color: rgba(255, 56, 56, 0.4);
