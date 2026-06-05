@@ -410,7 +410,7 @@ export class Flip7UI {
       
       scoreSummary.innerHTML = `
         <span class="current-sum" title="Mevcut döngü skoru">${tempScore} (${uniqueCount}/7 Kart)</span>
-        <span class="total-bank" title="Bankalanmış toplam puan">🏦 Toplam Skor: ${p.score} Puan</span>
+        <span class="total-bank" title="Bankalanmış toplam puan">Toplam Skor: ${p.score} Puan</span>
       `;
 
       infoRow.appendChild(nameTag);
