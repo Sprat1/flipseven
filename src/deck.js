@@ -63,6 +63,7 @@ export class Card {
 export class Deck {
   constructor() {
     this.cards = [];
+    this.reshuffled = false; // Deste tükenip yeni 94'lük deste geldiğinde true olur
     this.reset();
   }
 
@@ -106,10 +107,11 @@ export class Deck {
   // Desteden kart çeker
   draw() {
     if (this.cards.length === 0) {
-      // Deste bittiyse otomatik olarak yeniden doldur ve karıştır
-      // (Flip 7 oyununda biten desteyi karıştırma kuralı vardır)
+      // Tüm kartlar tükendiyse yeni karıştırılmış 94'lük deste oyuna girer.
+      // Deste turlar arası sıfırlanmaz; yalnızca burada (kartlar bitince) yenilenir.
       this.reset();
       this.shuffle();
+      this.reshuffled = true;
     }
     return this.cards.pop();
   }

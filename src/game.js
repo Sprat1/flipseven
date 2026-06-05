@@ -72,6 +72,16 @@ export class Flip7Game {
     this.onStateChange(this);
   }
 
+  // Desteden kart çeker; deste tükenip yeni 94'lük deste geldiyse oyuncuları bilgilendirir
+  drawCard() {
+    const card = this.deck.draw();
+    if (this.deck.reshuffled) {
+      this.deck.reshuffled = false;
+      this.addLog(`🔄 Deste tükendi! Yeni karıştırılmış 94'lük deste oyuna girdi (kart sayacı sıfırlandı).`, 'normal');
+    }
+    return card;
+  }
+
   addLog(message, type = 'normal') {
     this.logs.unshift({ message, type, time: new Date() });
     this.stateChanged();
@@ -84,6 +94,7 @@ export class Flip7Game {
     });
     
     this.deck = new Deck();
+    this.deck.shuffle(); // Deste oyun başında bir kez karılır; turlar arası sıfırlanmaz (kart sayımı için)
     this.roundNumber = 1;
     this.dealerIndex = 0;
     this.logs = [];
@@ -95,9 +106,9 @@ export class Flip7Game {
   // 2. YENİ TUR BAŞLATMA
   startRound() {
     this.gameStatus = 'dealing';
-    this.deck.reset();
-    this.deck.shuffle();
-    
+    // Deste turlar arasında SIFIRLANMAZ — kartlar tükendikçe azalır (kart sayımı avantajı için).
+    // Yeni karıştırılmış 94'lük deste yalnızca tüm kartlar bittiğinde (drawCard içinde) gelir.
+
     this.players.forEach(p => p.resetRoundState());
     this.actionState.active = false;
     this.actionState.pendingActionsQueue = [];
@@ -115,7 +126,7 @@ export class Flip7Game {
     
     for (let i = 0; i < this.players.length; i++) {
       const player = this.players[dealIndex];
-      const card = this.deck.draw();
+      const card = this.drawCard();
       player.cards.push(card);
       
       this.addLog(`${player.name} başlangıç verisi olarak ${card.getDisplayName()} (${card.getDisplayValue()}) kartını aldı.`, 'normal');
@@ -170,7 +181,7 @@ export class Flip7Game {
     for (let i = 0; i < this.players.length; i++) {
       const player = this.players[dealIndex];
       if (player.cards.length === 0) {
-        const card = this.deck.draw();
+        const card = this.drawCard();
         player.cards.push(card);
         this.addLog(`${player.name} başlangıç verisi olarak ${card.getDisplayName()} (${card.getDisplayValue()}) kartını aldı.`, 'normal');
         this.stateChanged();
@@ -234,7 +245,7 @@ export class Flip7Game {
     if (this.currentPlayerIndex !== playerId) return;
 
     const player = this.players[playerId];
-    const card = this.deck.draw();
+    const card = this.drawCard();
     
     this.addLog(`${player.name} veri kartı yükledi: ${card.getDisplayName()} (${card.getDisplayValue()})`, 'normal');
     
@@ -467,7 +478,7 @@ export class Flip7Game {
     this.actionState.flipsRemaining--;
     await new Promise(resolve => setTimeout(resolve, 800));
     
-    const drawnCard = this.deck.draw();
+    const drawnCard = this.drawCard();
     this.addLog(`⚔️ (Test Yüklemesi) ${targetPlayer.name} desteden çekti: ${drawnCard.getDisplayName()} (${drawnCard.getDisplayValue()})`, 'normal');
     
     this.applyCardToPlayer(targetPlayer, drawnCard, true);
