@@ -303,14 +303,14 @@ export class Flip7UI {
       
       if (i === 0) {
         select.innerHTML = `
-          <option value="human" selected>👤 İnsan (Sen)</option>
+          <option value="human" selected>İnsan (Sen)</option>
         `;
       } else {
         select.innerHTML = `
-          <option value="human">👤 İnsan (Paslaş)</option>
-          <option value="ai-balanced" selected>💻 AI - Dengeli</option>
-          <option value="ai-cautious">💻 AI - Temkinli</option>
-          <option value="ai-bold">💻 AI - Cesur</option>
+          <option value="human">İnsan (Paslaş)</option>
+          <option value="ai-balanced" selected>AI - Dengeli</option>
+          <option value="ai-cautious">AI - Temkinli</option>
+          <option value="ai-bold">AI - Cesur</option>
         `;
       }
 
