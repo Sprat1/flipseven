@@ -391,8 +391,8 @@ export class Flip7UI {
       nameTag.className = 'player-name-tag';
       if (p.isAI) nameTag.classList.add('ai-tag');
       
-      const activePrefix = (p.id === game.currentPlayerIndex && game.gameStatus === 'playing') ? '⚡ ' : '';
-      
+      // Aktif oyuncu parlayan çerçeveyle belli; isim önünde ikon yok
+
       // Online modda diğer oyuncuların adının sonuna (Siz) veya (AI) ekleyelim
       let suffix = '';
       if (this.isOnlineGame()) {
@@ -400,7 +400,7 @@ export class Flip7UI {
         if (isMe) suffix = ' (Sen)';
       }
       
-      nameTag.textContent = `${activePrefix}${p.name}${suffix}`;
+      nameTag.textContent = `${p.name}${suffix}`;
 
       const scoreSummary = document.createElement('div');
       scoreSummary.className = 'player-score-summary';
@@ -662,25 +662,27 @@ export class Flip7UI {
         tdName.textContent = p.name;
 
         const tdCards = document.createElement('td');
-        tdCards.textContent = p.cards.map(c => `${c.getDisplayName()}(${c.getDisplayValue()})`).join(', ') || 'Kart yüklenmedi';
+        tdCards.textContent = p.cards.map(c =>
+          c.type === 'action' ? c.getDisplayName() : `${c.getDisplayName()}(${c.getDisplayValue()})`
+        ).join(', ') || 'Kart yüklenmedi';
 
         const tdRoundScore = document.createElement('td');
         tdRoundScore.style.fontWeight = 'bold';
         tdRoundScore.style.color = 'var(--neon-blue)';
-        tdRoundScore.textContent = p.status === 'busted' ? '💥 0' : `${p.roundScore} Puan`;
+        tdRoundScore.textContent = p.status === 'busted' ? '0' : `${p.roundScore} Puan`;
 
         const tdTotalScore = document.createElement('td');
         tdTotalScore.textContent = `${p.score} Puan`;
 
         const tdStatus = document.createElement('td');
         if (p.status === 'busted') {
-          tdStatus.innerHTML = '<span style="color:var(--neon-red);font-weight:bold;">⚡ Busted (Hata)</span>';
+          tdStatus.innerHTML = '<span style="color:var(--neon-red);font-weight:bold;">Busted (Hata)</span>';
         } else if (p.isFlipped7) {
-          tdStatus.innerHTML = '<span style="color:var(--neon-yellow);font-weight:bold;">🌈 Flip 7 (+15)</span>';
+          tdStatus.innerHTML = '<span style="color:var(--neon-yellow);font-weight:bold;">Flip 7 (+15)</span>';
         } else if (p.status === 'frozen') {
-          tdStatus.innerHTML = '<span style="color:var(--neon-blue);font-weight:bold;">❄️ Kilitlendi</span>';
+          tdStatus.innerHTML = '<span style="color:var(--neon-blue);font-weight:bold;">Kilitlendi</span>';
         } else {
-          tdStatus.innerHTML = '<span style="color:var(--neon-green);font-weight:bold;">🛡️ Pas Geçti</span>';
+          tdStatus.innerHTML = '<span style="color:var(--neon-green);font-weight:bold;">Pas Geçti</span>';
         }
 
         tr.appendChild(tdName);
