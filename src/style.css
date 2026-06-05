@@ -232,6 +232,12 @@ body {
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
 }
 
+/* Açılır liste seçenekleri: beyaz zemin üstüne siyah yazı (okunabilirlik) */
+select option {
+  background-color: #fff;
+  color: #000;
+}
+
 .players-setup-grid {
   display: grid;
   grid-template-columns: 1fr;
