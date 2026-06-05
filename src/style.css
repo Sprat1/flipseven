@@ -501,6 +501,11 @@ select option {
   font-size: 1.15rem;
 }
 
+/* Parantez içi kart sayacı (7'ye ilerleme) ana skordan farklı renk */
+.player-score-summary .current-sum .card-count-paren {
+  color: var(--neon-yellow);
+}
+
 .player-score-summary .total-bank {
   color: #a4b0be;
   font-size: 0.95rem;

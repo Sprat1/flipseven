@@ -409,7 +409,7 @@ export class Flip7UI {
       const uniqueCount = p.getUniqueNumbersCount();
       
       scoreSummary.innerHTML = `
-        <span class="current-sum" title="Mevcut döngü skoru">Round Skoru: ${tempScore} (${uniqueCount}/7 Kart)</span>
+        <span class="current-sum" title="Mevcut döngü skoru">Round Skoru: ${tempScore} <span class="card-count-paren">(${uniqueCount}/7 Kart)</span></span>
         <span class="total-bank" title="Bankalanmış toplam puan">Toplam Skor: ${p.score} Puan</span>
       `;
 
