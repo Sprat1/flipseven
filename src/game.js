@@ -461,27 +461,33 @@ export class Flip7Game {
 
   // Flip Three Döngüsü
   async continueFlipThree() {
-    this.stateChanged();
-    
-    if (this.actionState.flipsRemaining <= 0) {
-      this.endFlipThreeAction();
-      return;
-    }
+    try {
+      this.stateChanged();
 
-    const targetPlayer = this.players[this.actionState.targetPlayerId];
-    
-    if (targetPlayer.status !== 'active') {
-      this.endFlipThreeAction();
-      return;
-    }
+      if (this.actionState.flipsRemaining <= 0) {
+        this.endFlipThreeAction();
+        return;
+      }
 
-    this.actionState.flipsRemaining--;
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const drawnCard = this.drawCard();
-    this.addLog(`${targetPlayer.name} desteden çekti: ${drawnCard.getDisplayName()}`, 'normal');
-    
-    this.applyCardToPlayer(targetPlayer, drawnCard, true);
+      const targetPlayer = this.players[this.actionState.targetPlayerId];
+
+      if (!targetPlayer || targetPlayer.status !== 'active') {
+        this.endFlipThreeAction();
+        return;
+      }
+
+      this.actionState.flipsRemaining--;
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const drawnCard = this.drawCard();
+      this.addLog(`${targetPlayer.name} desteden çekti: ${drawnCard.getDisplayName()}`, 'normal');
+
+      this.applyCardToPlayer(targetPlayer, drawnCard, true);
+    } catch (e) {
+      // Sessizce yutulan async hataları görünür kıl (3 kart çek takılması teşhisi)
+      this.addLog(`Hata (3 Kart Çek): ${e.message}`, 'bust');
+      console.error('continueFlipThree hatası:', e);
+    }
   }
 
   // Flip Three Aksiyonunu Sonlandırma ve Sıradaki Kuyruğu Yönetme
