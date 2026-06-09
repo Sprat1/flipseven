@@ -369,6 +369,35 @@ export class NetworkManager {
     this.broadcastGameState();
   }
 
+  // actionState'i kartların display alanlarıyla birlikte serileştirir.
+  // (PeerJS Card metodlarını düşürdüğü için client'ta isim/ikon kaybolmasın.)
+  serializeCardData(c) {
+    if (!c) return null;
+    return {
+      id: c.id, type: c.type, value: c.value,
+      displayValue: c.getDisplayValue(),
+      displayName: c.getDisplayName(),
+      styleClass: c.getStyleClass()
+    };
+  }
+
+  serializeActionState() {
+    const a = this.game.actionState;
+    if (!a) return null;
+    return {
+      active: a.active,
+      sourcePlayerId: a.sourcePlayerId,
+      targetPlayerId: a.targetPlayerId,
+      flipsRemaining: a.flipsRemaining,
+      card: a.card ? this.serializeCardData(a.card) : null,
+      cardsFlippedThisAction: (a.cardsFlippedThisAction || []).map(c => this.serializeCardData(c)),
+      pendingActionsQueue: (a.pendingActionsQueue || []).map(item => ({
+        card: this.serializeCardData(item.card),
+        sourcePlayerId: item.sourcePlayerId
+      }))
+    };
+  }
+
   // Oyun durumunu paketleyip istemcilere yollar
   broadcastGameState() {
     if (!this.isHost) return;
@@ -378,7 +407,7 @@ export class NetworkManager {
       currentPlayerIndex: this.game.currentPlayerIndex,
       gameStatus: this.game.gameStatus,
       deckCount: this.game.deck.count(),
-      actionState: this.game.actionState,
+      actionState: this.serializeActionState(),
       logs: this.game.logs,
       players: this.game.players.map(p => {
         return {
