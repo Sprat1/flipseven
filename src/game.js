@@ -85,7 +85,8 @@ export class Flip7Game {
   }
 
   addLog(message, type = 'normal') {
-    this.logs.unshift({ message, type, time: new Date() });
+    // Zaman, ağ üzerinden bozulmadan taşınabilmesi için Date nesnesi değil epoch sayısı olarak tutulur
+    this.logs.unshift({ message, type, time: Date.now() });
     this.stateChanged();
   }
 

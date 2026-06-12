@@ -356,12 +356,17 @@ export class Flip7UI {
 
   // 3. ANA GÖRSELLEŞTİRME VE SES REAKSİYONU (RENDER)
   render(game) {
-    this.renderHeader(game);
-    this.renderPlayersBoards(game);
-    this.updateControls(game);
-    this.renderLogs(game);
-    this.renderModals(game);
-    this.triggerSounds(game);
+    // Her bölüm bağımsız çizilir: birindeki hata diğerlerini (özellikle hedef
+    // seçim modalini) engellememeli — aksi halde online oyun kilitlenebilir.
+    const safe = (fn) => {
+      try { fn(); } catch (e) { console.error('Render hatası:', e); }
+    };
+    safe(() => this.renderHeader(game));
+    safe(() => this.renderPlayersBoards(game));
+    safe(() => this.updateControls(game));
+    safe(() => this.renderLogs(game));
+    safe(() => this.renderModals(game));
+    safe(() => this.triggerSounds(game));
   }
 
   renderHeader(game) {
@@ -561,7 +566,9 @@ export class Flip7UI {
       const entry = document.createElement('div');
       entry.className = `log-entry ${log.type}`;
       
-      const timeStr = log.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      // log.time ağdan sayı/metin olarak gelebilir; her formatı tolere et
+      const t = log.time instanceof Date ? log.time : new Date(log.time);
+      const timeStr = isNaN(t.getTime()) ? '' : t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       entry.innerHTML = `<span style="opacity: 0.4;">[${timeStr}]</span> ${log.message}`;
       
       this.dom.gameLogs.appendChild(entry);
