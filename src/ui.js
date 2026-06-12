@@ -399,7 +399,8 @@ export class Flip7UI {
         const isMe = (this.network.isHost && Number(p.id) === 0) || (!this.network.isHost && Number(p.id) === Number(this.network.myPlayerId));
         if (isMe) suffix = ' (Sen)';
       }
-      
+      if (p.isDisconnected) suffix += ' (Ayrıldı)';
+
       nameTag.textContent = `${p.name}${suffix}`;
 
       const scoreSummary = document.createElement('div');
@@ -581,7 +582,7 @@ export class Flip7UI {
       } else if (card.value === 'flip_three') {
         this.dom.targetModalDesc.textContent = `${sourcePlayer.name}, veri testi (3 kart çekme) işlemine hangi oyuncuyu sokmak istersin?`;
       } else if (card.value === 'second_chance') {
-        this.dom.targetModalDesc.textContent = `${sourcePlayer.name}, bu İkinci Şans koruma kartını kime yönlendirmek istersin? (Kendine de verebilirsin)`;
+        this.dom.targetModalDesc.textContent = `${sourcePlayer.name}, elindeki fazladan İkinci Şans kartını hangi oyuncuya devretmek istersin?`;
       }
 
       this.dom.targetButtons.innerHTML = '';
@@ -601,9 +602,9 @@ export class Flip7UI {
           if (p.status !== 'active') return;
         }
         
-        if (card.value === 'second_chance' && p.hasSecondChance) {
-          const anyoneWithoutSC = game.players.some(x => x.status === 'active' && !x.hasSecondChance);
-          if (anyoneWithoutSC) return; 
+        if (card.value === 'second_chance') {
+          // Kural: yalnızca İkinci Şans'ı olmayan aktif bir rakibe devredilebilir
+          if (p.status !== 'active' || p.hasSecondChance || p.id === sourcePlayer.id) return;
         }
 
         const btn = document.createElement('button');

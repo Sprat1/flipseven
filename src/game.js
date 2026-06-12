@@ -16,13 +16,14 @@ export class Player {
     this.status = 'active'; // 'active' | 'stayed' | 'busted' | 'frozen'
     this.roundScore = 0;
     this.isFlipped7 = false;
+    this.isDisconnected = false; // Bağlantısı kopan oyuncu sonraki turlara katılmaz
   }
 
   // Tur başında oyuncu durumunu sıfırlar
   resetRoundState() {
     this.cards = [];
     this.hasSecondChance = false;
-    this.status = 'active';
+    this.status = this.isDisconnected ? 'stayed' : 'active';
     this.roundScore = 0;
     this.isFlipped7 = false;
   }
@@ -51,6 +52,7 @@ export class Flip7Game {
     this.roundNumber = 1;
     this.dealerIndex = 0;
     this.gameStatus = 'setup'; // 'setup' | 'dealing' | 'playing' | 'action_resolution' | 'round_summary' | 'game_over'
+    this.isInitialDealing = false; // İlk dağıtım sürerken true (aksiyon molasından dağıtıma doğru dönebilmek için)
     
     // Aksiyon çözme durumu
     this.actionState = {
@@ -106,6 +108,7 @@ export class Flip7Game {
   // 2. YENİ TUR BAŞLATMA
   startRound() {
     this.gameStatus = 'dealing';
+    this.isInitialDealing = true;
     // Deste turlar arasında SIFIRLANMAZ — kartlar tükendikçe azalır (kart sayımı avantajı için).
     // Yeni karıştırılmış 94'lük deste yalnızca tüm kartlar bittiğinde (drawCard içinde) gelir.
 
@@ -126,6 +129,10 @@ export class Flip7Game {
     
     for (let i = 0; i < this.players.length; i++) {
       const player = this.players[dealIndex];
+      if (player.isDisconnected) {
+        dealIndex = (dealIndex + 1) % this.players.length;
+        continue;
+      }
       const card = this.drawCard();
       player.cards.push(card);
       
@@ -180,7 +187,7 @@ export class Flip7Game {
     
     for (let i = 0; i < this.players.length; i++) {
       const player = this.players[dealIndex];
-      if (player.cards.length === 0) {
+      if (!player.isDisconnected && player.cards.length === 0) {
         const card = this.drawCard();
         player.cards.push(card);
         this.addLog(`${player.name} başlangıç kartını aldı: ${card.getDisplayName()}`, 'normal');
@@ -223,6 +230,7 @@ export class Flip7Game {
   // Aktif hamlelerin başlaması
   startActiveTurns() {
     this.gameStatus = 'playing';
+    this.isInitialDealing = false;
     this.currentPlayerIndex = (this.dealerIndex + 1) % this.players.length;
     
     if (this.getCurrentPlayer().status !== 'active') {
@@ -337,7 +345,7 @@ export class Flip7Game {
     
     // C) AKSİYON KARTLARI
     else if (card.type === 'action') {
-      if (card.value === 'second_chance') {
+      if (card.value === 'second_chance' && !player.hasSecondChance) {
         player.hasSecondChance = true;
         this.addLog(`${player.name} İkinci Şans kartını aktif etti.`, 'normal');
         this.stateChanged();
@@ -346,6 +354,10 @@ export class Flip7Game {
         } else {
           this.moveToNextPlayer();
         }
+      } else if (card.value === 'second_chance') {
+        // Kural: elinde İkinci Şans varken ikincisini çeken, kartı başka bir oyuncuya devretmek zorundadır
+        this.addLog(`${player.name} zaten İkinci Şans'a sahip; fazladan kartı devretmesi gerekiyor.`, 'normal');
+        this.enterActionResolution(player, card, isFlipThreeStep);
       } else {
         this.enterActionResolution(player, card, isFlipThreeStep);
       }
@@ -396,13 +408,28 @@ export class Flip7Game {
     const st = this.actionState;
     if (!st || !st.active) return false;
     const card = st.card;
+    const source = this.players[st.sourcePlayerId];
+
+    // Kart sahibinin bağlantısı koptuysa kart iptal edilir (kilitlenme önlenir)
+    if (!source || source.isDisconnected) {
+      this.discardActionCard(`${card.getDisplayName()} kartı, sahibi oyundan ayrıldığı için iptal edildi.`);
+      return true;
+    }
+
+    // İkinci Şans devri: İkinci Şans'ı olmayan aktif bir oyuncu yoksa kart oyun dışı kalır
+    if (card.value === 'second_chance') {
+      const validTargets = this.players.filter(p => p.id !== source.id && p.status === 'active' && !p.hasSecondChance);
+      if (validTargets.length > 0) return false; // Normal şekilde hedef seçilsin
+      this.discardActionCard(`Devredilecek uygun oyuncu yok; fazladan İkinci Şans kartı oyun dışı kaldı.`);
+      return true;
+    }
+
     if (card.value !== 'freeze' && card.value !== 'flip_three') return false;
 
-    const source = this.players[st.sourcePlayerId];
     const otherActive = this.players.filter(p => p.id !== source.id && p.status === 'active');
     if (otherActive.length > 0) return false; // İnsan/AI normal şekilde hedef seçsin
 
-    if (source && source.status === 'active') {
+    if (source.status === 'active') {
       // Tek aktif oyuncu kaynak: kartı kendine uygulamak zorunda
       this.addLog(`Başka aktif oyuncu yok; ${source.name} ${card.getDisplayName()} kartını kendine uygulamak zorunda.`, 'normal');
       this.resolveAction(source.id);
@@ -415,6 +442,19 @@ export class Flip7Game {
     return true;
   }
 
+  // Hedef bekleyen aksiyon kartını sahibinin elinden çıkarıp akışı sürdürür
+  discardActionCard(logMessage) {
+    const st = this.actionState;
+    const source = this.players[st.sourcePlayerId];
+    if (source && st.card) {
+      const idx = source.cards.findIndex(c => c.id === st.card.id);
+      if (idx !== -1) source.cards.splice(idx, 1);
+    }
+    this.addLog(logMessage, 'normal');
+    st.active = false;
+    this.finishActionAndContinue();
+  }
+
   // 4. AKSİYON ÇÖZÜMLEME (RESOLVE ACTION)
   resolveAction(targetPlayerId) {
     if (this.gameStatus !== 'action_resolution') return;
@@ -422,7 +462,13 @@ export class Flip7Game {
     const sourcePlayer = this.players[this.actionState.sourcePlayerId];
     const targetPlayer = this.players[targetPlayerId];
     const card = this.actionState.card;
-    
+
+    // Hedef doğrulama: geçersiz/pasif hedefler reddedilir (online'da client hatalı veri gönderebilir)
+    if (!targetPlayer) return;
+    if ((card.value === 'freeze' || card.value === 'flip_three') && targetPlayer.status !== 'active') return;
+    if (card.value === 'second_chance' &&
+        (targetPlayer.status !== 'active' || targetPlayer.hasSecondChance || targetPlayer.id === sourcePlayer.id)) return;
+
     this.actionState.targetPlayerId = targetPlayerId;
     this.addLog(`${sourcePlayer.name}, ${card.getDisplayName()} kartını ${targetPlayer.name} üzerinde kullanıyor.`, 'normal');
 
@@ -490,9 +536,37 @@ export class Flip7Game {
     }
   }
 
-  // Flip Three Aksiyonunu Sonlandırma ve Sıradaki Kuyruğu Yönetme
+  // Aksiyon Sonlandırma ve Sıradaki Kuyruğu Yönetme
   finishActionAndContinue() {
-    if (this.players.some(p => p.cards.length === 0)) {
+    // Kuyrukta bekleyen aksiyon varsa (Flip Three sırasında çekilenler) önce o çözülür
+    if (this.actionState.pendingActionsQueue && this.actionState.pendingActionsQueue.length > 0) {
+      const nextAct = this.actionState.pendingActionsQueue.shift();
+      this.gameStatus = 'action_resolution';
+      this.actionState = {
+        active: true,
+        card: nextAct.card,
+        sourcePlayerId: nextAct.sourcePlayerId,
+        targetPlayerId: null,
+        flipsRemaining: 0,
+        cardsFlippedThisAction: [],
+        pendingActionsQueue: this.actionState.pendingActionsQueue
+      };
+
+      this.addLog(`Sıradaki aksiyon kartı kullanılıyor...`, 'normal');
+      this.stateChanged();
+
+      // Başka geçerli hedef yoksa otomatik çöz (boş modal / kilitlenmeyi önler)
+      if (this.maybeAutoResolveAction()) return;
+
+      if (this.players[nextAct.sourcePlayerId].isAI) {
+        setTimeout(() => this.autoResolveAIAction(), 1200);
+      }
+      return;
+    }
+
+    if (this.isInitialDealing) {
+      // Aksiyon ilk dağıtım sırasında çıktıysa dağıtıma geri dön
+      // (herkes kartını aldıysa resumeInitialDeal startActiveTurns'e geçer; böylece tur doğru oyuncudan başlar)
       this.resumeInitialDeal();
     } else {
       this.gameStatus = 'playing';
@@ -506,31 +580,33 @@ export class Flip7Game {
 
   endFlipThreeAction() {
     this.addLog(`3 kart çekme tamamlandı.`, 'normal');
-    
-    if (this.actionState.pendingActionsQueue.length > 0) {
-      const nextAct = this.actionState.pendingActionsQueue.shift();
-      this.actionState = {
-        active: true,
-        card: nextAct.card,
-        sourcePlayerId: nextAct.sourcePlayerId,
-        targetPlayerId: null,
-        flipsRemaining: 0,
-        cardsFlippedThisAction: [],
-        pendingActionsQueue: this.actionState.pendingActionsQueue
-      };
-      
-      this.addLog(`Sıradaki aksiyon kartı kullanılıyor...`, 'normal');
-      this.stateChanged();
+    this.actionState.active = false;
+    this.finishActionAndContinue();
+  }
 
-      // Başka geçerli hedef yoksa otomatik çöz (boş modal / kilitlenmeyi önler)
-      if (this.maybeAutoResolveAction()) return;
+  // Bağlantısı kopan oyuncuyu oyundan düşürür ve akışın kilitlenmesini önler
+  handlePlayerDisconnect(playerId) {
+    const player = this.players[playerId];
+    if (!player || player.isDisconnected) return;
 
-      if (this.players[nextAct.sourcePlayerId].isAI) {
-        setTimeout(() => this.autoResolveAIAction(), 1200);
-      }
+    player.isDisconnected = true;
+    if (player.status === 'active') {
+      player.status = 'stayed';
+    }
+    this.addLog(`${player.name} bağlantısı koptu, oyundan ayrıldı.`, 'bust');
+
+    // Hedef seçimi bekleyen aksiyonun sahibi ayrıldıysa kartı iptal et (modal kilitlenmesin)
+    if (this.gameStatus === 'action_resolution' && this.actionState.active &&
+        Number(this.actionState.sourcePlayerId) === Number(playerId)) {
+      this.discardActionCard(`${this.actionState.card.getDisplayName()} kartı, sahibi ayrıldığı için iptal edildi.`);
+      return;
+    }
+
+    // Devam eden Flip Three'nin hedefi ayrıldıysa döngü status kontrolünde kendiliğinden sonlanır
+    if (this.gameStatus === 'playing' && Number(this.currentPlayerIndex) === Number(playerId)) {
+      this.moveToNextPlayer();
     } else {
-      this.actionState.active = false;
-      this.finishActionAndContinue();
+      this.stateChanged();
     }
   }
 
@@ -755,16 +831,12 @@ export class Flip7Game {
       }
     }
     else if (card.value === 'second_chance') {
-      if (!ai.hasSecondChance) {
-        targetId = ai.id;
-      } else {
-        const activeWithoutSC = this.players.filter(p => p.status === 'active' && !p.hasSecondChance);
-        if (activeWithoutSC.length > 0) {
-          const sorted = [...activeWithoutSC].sort((a, b) => a.score - b.score);
-          targetId = sorted[0].id;
-        } else {
-          targetId = ai.id;
-        }
+      // Buraya yalnızca elinde zaten İkinci Şans varken gelinir; kart devredilmek zorundadır
+      // (uygun hedef yoksa maybeAutoResolveAction kartı çoktan oyun dışı bırakmıştır)
+      const activeWithoutSC = this.players.filter(p => p.id !== ai.id && p.status === 'active' && !p.hasSecondChance);
+      if (activeWithoutSC.length > 0) {
+        const sorted = [...activeWithoutSC].sort((a, b) => a.score - b.score);
+        targetId = sorted[0].id;
       }
     }
 

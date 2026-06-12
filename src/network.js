@@ -118,41 +118,60 @@ export class NetworkManager {
   handleHostReceivedData(conn, data) {
     // A) OYUNA KATILMA İSTEĞİ (JOIN)
     if (data.type === 'JOIN') {
+      // Oyun başladıktan sonra katılım kabul edilmez
+      if (this.game.gameStatus !== 'setup') {
+        conn.send({ type: 'JOIN_REJECT', message: 'Oyun çoktan başladı. Bu odaya şu an katılamazsınız.' });
+        setTimeout(() => conn.close(), 300);
+        return;
+      }
+
       if (this.lobbyPlayers.length >= 5) {
         conn.send({ type: 'JOIN_REJECT', message: 'Lobi dolu (Maksimum 5 oyuncu).' });
-        conn.close();
+        setTimeout(() => conn.close(), 300);
         return;
+      }
+
+      // Nick çakışmasını önle (aynı isimli iki oyuncu kafa karışıklığı yaratır)
+      const baseName = (data.name || 'Misafir').toString().trim().substring(0, 15) || 'Misafir';
+      let uniqueName = baseName;
+      let suffix = 2;
+      while (this.lobbyPlayers.some(p => p.name === uniqueName)) {
+        uniqueName = `${baseName} ${suffix++}`;
       }
 
       // Oyuncuyu lobiye ekle
       const newPlayerId = this.lobbyPlayers.length;
       const newPlayer = {
         id: newPlayerId,
-        name: data.name,
+        name: uniqueName,
         isHost: false,
         peerId: conn.peer
       };
-      
+
       this.lobbyPlayers.push(newPlayer);
-      this.connections.push({ conn, playerId: newPlayerId, name: data.name });
-      
-      // Onay ve oyuncu id'sini gönder
+      this.connections.push({ conn, playerId: newPlayerId, name: uniqueName });
+
+      // Onay, oyuncu id'sini ve (gerekirse tekilleştirilmiş) ismi gönder
       conn.send({
         type: 'JOIN_ACK',
         playerId: newPlayerId,
+        yourName: uniqueName,
         hostName: this.myNick
       });
 
-      this.game.addLog(`${data.name} odaya bağlandı.`, 'normal');
+      this.game.addLog(`${uniqueName} odaya bağlandı.`, 'normal');
 
       // Herkese lobi güncellemesini broadcast et
       this.broadcastLobbyUpdate();
     }
-    
+
     // B) OYUNCU HAMLESİ (ACTION)
     else if (data.type === 'ACTION') {
-      const playerId = data.playerId;
-      
+      // Oyuncu kimliği client beyanına değil, bağlantı eşlemesine göre belirlenir
+      const sender = this.connections.find(c => c.conn.peer === conn.peer);
+      if (!sender) return;
+      const playerId = Number(sender.playerId);
+
       if (this.game.currentPlayerIndex !== playerId || this.game.gameStatus !== 'playing') {
         return; // Geçersiz hamle
       }
@@ -162,15 +181,20 @@ export class NetworkManager {
       } else if (data.action === 'stay') {
         this.game.playerStay(playerId);
       }
-      
+
       this.broadcastGameState();
     }
-    
+
     // C) AKSİYON HEDEFİ SEÇİMİ (RESOLVE_ACTION)
     else if (data.type === 'RESOLVE_ACTION') {
-      const targetId = data.targetId;
-      this.game.resolveAction(targetId);
-      
+      // Yalnızca aksiyon kartının sahibi hedef seçebilir
+      const sender = this.connections.find(c => c.conn.peer === conn.peer);
+      if (!sender) return;
+      if (this.game.gameStatus !== 'action_resolution' || !this.game.actionState.active) return;
+      if (Number(this.game.actionState.sourcePlayerId) !== Number(sender.playerId)) return;
+
+      this.game.resolveAction(Number(data.targetId));
+
       this.broadcastGameState();
     }
   }
@@ -178,35 +202,24 @@ export class NetworkManager {
   // Bağlantı koptuğunda
   handleConnectionDisconnect(conn) {
     const idx = this.connections.findIndex(c => c.conn.peer === conn.peer);
-    if (idx !== -1) {
-      const disconnectedPlayer = this.connections[idx];
-      this.game.addLog(`${disconnectedPlayer.name} bağlantısı koptu!`, 'bust');
-      
-      // Lobideysek lobiden çıkart
+    if (idx === -1) return;
+
+    const disconnected = this.connections[idx];
+    this.connections.splice(idx, 1);
+
+    if (this.game.gameStatus === 'setup') {
+      // Lobide: oyuncuyu çıkar, id'leri yeniden indeksle ve herkese güncel id'sini bildir
+      this.game.addLog(`${disconnected.name} lobiden ayrıldı.`, 'normal');
       this.lobbyPlayers = this.lobbyPlayers.filter(p => p.peerId !== conn.peer);
-      // ID'leri yeniden indeksle
       this.lobbyPlayers.forEach((p, index) => {
         p.id = index;
       });
-      
-      // Bağlantıyı listeden sil
-      this.connections.splice(idx, 1);
-      
-      // Oyun başladıysa oyuncunun durumunu pasivize et
-      const pIndex = this.game.players.findIndex(p => p.name === disconnectedPlayer.name);
-      if (pIndex !== -1) {
-        this.game.players[pIndex].status = 'stayed'; // Pasife al
-        this.game.addLog(`${disconnectedPlayer.name} oyundan çekildi.`, 'normal');
-      }
-
       this.broadcastLobbyUpdate();
-      
-      if (this.game.gameStatus !== 'setup') {
-        if (this.game.currentPlayerIndex === pIndex) {
-          this.game.moveToNextPlayer();
-        }
-        this.broadcastGameState();
-      }
+    } else {
+      // Oyun içinde: id'ler sabittir; oyuncuyu koltuk numarası üzerinden pasifize et
+      // (isimle arama yapılmaz — aynı isimli oyuncular yanlış eşleşebilirdi)
+      this.game.handlePlayerDisconnect(Number(disconnected.playerId));
+      this.broadcastGameState();
     }
   }
 
@@ -298,17 +311,25 @@ export class NetworkManager {
     // A) ODAYA GİRİŞ ONAYI (JOIN_ACK)
     if (data.type === 'JOIN_ACK') {
       this.myPlayerId = Number(data.playerId);
+      if (data.yourName) this.myNick = data.yourName; // Host nick çakışmasını çözmüş olabilir
       this.setStatus("Bağlantı Stabil / Lobide", "online");
     }
-    
+
     // B) LOBİ GÜNCELLEMESİ (LOBBY_UPDATE)
     else if (data.type === 'LOBBY_UPDATE') {
+      // Lobiden ayrılan olunca host id'leri yeniden indeksler; güncel id'mizi alırız
+      if (data.yourId !== undefined && data.yourId !== null) {
+        this.myPlayerId = Number(data.yourId);
+      }
       this.lobbyPlayers = data.players;
       this.ui.updateLobby(this.roomId, this.lobbyPlayers, false);
     }
-    
+
     // C) OYUN BAŞLADI (START_GAME)
     else if (data.type === 'START_GAME') {
+      if (data.playerId !== undefined && data.playerId !== null) {
+        this.myPlayerId = Number(data.playerId); // Oyun içi koltuk numarası kesinleşir
+      }
       this.ui.dom.setupScreen.classList.remove('active');
       this.ui.dom.gameScreen.classList.add('active');
       document.getElementById('online-badge').style.display = 'inline-block';
@@ -332,9 +353,13 @@ export class NetworkManager {
   broadcastLobbyUpdate() {
     this.ui.updateLobby(this.roomId, this.lobbyPlayers, true);
     this.connections.forEach(c => {
+      // Yeniden indeksleme sonrası bağlantı-oyuncu eşlemesini taze tut ve alıcıya güncel id'sini bildir
+      const lobbyPlayer = this.lobbyPlayers.find(p => p.peerId === c.conn.peer);
+      if (lobbyPlayer) c.playerId = lobbyPlayer.id;
       c.conn.send({
         type: 'LOBBY_UPDATE',
-        players: this.lobbyPlayers
+        players: this.lobbyPlayers,
+        yourId: lobbyPlayer ? lobbyPlayer.id : null
       });
     });
   }
@@ -343,23 +368,30 @@ export class NetworkManager {
   startOnlineGame(aiCount = 0) {
     if (!this.isHost) return;
 
+    // Toplam oyuncu sayısı (insan + AI) 5'i aşamaz
+    const allowedAi = Math.max(0, Math.min(aiCount, 5 - this.lobbyPlayers.length));
+
     // Oyunu kur
     const playersConfig = this.lobbyPlayers.map(p => {
       return { name: p.name, isAI: false, aiPersonality: 'balanced' };
     });
 
     // Lobide yapay zekalar eklenmişse ekle
-    for (let i = 0; i < aiCount; i++) {
+    for (let i = 0; i < allowedAi; i++) {
       playersConfig.push({ name: `AI-Apex-${i+1}`, isAI: true, aiPersonality: i % 2 === 0 ? 'balanced' : 'bold' });
     }
 
-    this.game.setupGame(playersConfig);
-
-    // İstemcilere ekranı geçmesini söyle
+    // İstemcilere ekranı geçmelerini ve oyun içi koltuk numaralarını bildir
+    // (oyun kurulmadan önce gönderilir ki ilk STATE_UPDATE'ler doğru kimlikle işlensin)
     this.connections.forEach(c => {
-      c.conn.send({ type: 'START_GAME' });
+      c.conn.send({ type: 'START_GAME', playerId: c.playerId });
     });
-    
+
+    this.game.setupGame(playersConfig);
+    if (allowedAi < aiCount) {
+      this.game.addLog(`Oyuncu sınırı 5: yalnızca ${allowedAi} AI eklendi.`, 'normal');
+    }
+
     // Host ekranını oyun alanına geçir
     this.ui.dom.setupScreen.classList.remove('active');
     this.ui.dom.gameScreen.classList.add('active');
@@ -428,7 +460,8 @@ export class NetworkManager {
           hasSecondChance: p.hasSecondChance,
           status: p.status,
           roundScore: p.roundScore,
-          isFlipped7: p.isFlipped7
+          isFlipped7: p.isFlipped7,
+          isDisconnected: p.isDisconnected
         };
       })
     };
@@ -489,6 +522,7 @@ export class NetworkManager {
           status: p.status,
           roundScore: p.roundScore,
           isFlipped7: p.isFlipped7,
+          isDisconnected: p.isDisconnected,
           getUniqueNumbersCount: () => {
             const numbers = p.cards.filter(c => c.type === 'number').map(c => c.value);
             return new Set(numbers).size;
