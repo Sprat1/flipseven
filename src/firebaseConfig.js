@@ -12,12 +12,13 @@
 // Not: Bu değerler gizli DEĞİLDİR (istemci tarafı proje kimliğidir);
 // commit edilip GitHub'da görünmesi güvenlik sorunu yaratmaz.
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyAyKaRITuz6OunyFTBY-sDhOKydLhGTtzA",
+  authDomain: "flipse7en-dc95a.firebaseapp.com",
+  projectId: "flipse7en-dc95a",
+  storageBucket: "flipse7en-dc95a.firebasestorage.app",
+  messagingSenderId: "770730693048",
+  appId: "1:770730693048:web:874c6022c24c4592cf3f4d",
+  measurementId: "G-G5LECYTLMV"
 };
 
 // apiKey doluysa hesap sistemi aktifleşir; boşken oyun eskisi gibi girişsiz çalışır.
