@@ -3,6 +3,7 @@
 import { Flip7Game } from './game.js';
 import { Flip7UI } from './ui.js';
 import { NetworkManager } from './network.js';
+import { AuthManager } from './auth.js';
 import { initDesignPanel } from './designPanel.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,9 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const game = new Flip7Game();
   const ui = new Flip7UI(game);
   const network = new NetworkManager(game, ui);
-  
-  // Arayüzün ağ yöneticisine erişimini sağla
+  const auth = new AuthManager();
+
+  // Arayüzün ağ ve hesap yöneticilerine erişimini sağla
   ui.network = network;
+  ui.authManager = auth;
+  ui.initAuthUI();
 
   // Oyun durumunu ağ üzerinden de senkronize et
   const originalOnStateChange = game.onStateChange;
@@ -40,7 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.flip7 = {
     game,
     ui,
-    network
+    network,
+    auth
   };
   
   console.log("Flip 7 Arena başlatıldı.");

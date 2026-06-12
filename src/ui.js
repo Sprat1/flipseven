@@ -6,6 +6,7 @@ export class Flip7UI {
   constructor(game) {
     this.game = game;
     this.network = null; // main.js tarafından sonradan atanacak
+    this.authManager = null; // main.js tarafından sonradan atanacak
     this.prevLogCount = 0;
     this.renderedCardIds = new Set();
 
@@ -97,6 +98,10 @@ export class Flip7UI {
     
     // Oda Oluştur
     this.dom.createRoomBtn.addEventListener('click', () => {
+      if (this.authManager && this.authManager.enabled && !this.authManager.isLoggedIn()) {
+        alert('Çevrimiçi oynamak için önce Google ile giriş yapmalısın.');
+        return;
+      }
       const nick = this.dom.hostNick.value.trim() || 'HostArda';
       audio.init();
       this.dom.createRoomBtn.disabled = true;
@@ -106,6 +111,10 @@ export class Flip7UI {
 
     // Odaya Katıl
     this.dom.joinRoomBtn.addEventListener('click', () => {
+      if (this.authManager && this.authManager.enabled && !this.authManager.isLoggedIn()) {
+        alert('Çevrimiçi oynamak için önce Google ile giriş yapmalısın.');
+        return;
+      }
       const nick = this.dom.joinNick.value.trim() || 'Misafir';
       const code = this.dom.joinRoomId.value.trim();
       if (!code) {
@@ -203,6 +212,102 @@ export class Flip7UI {
     this.game.onStateChange = (game) => this.render(game);
   }
 
+  // --- HESAP ARAYÜZÜ (FIREBASE AUTH) ---
+
+  // main.js, AuthManager'ı atadıktan sonra çağırır
+  initAuthUI() {
+    const a = this.authManager;
+    const bar = document.getElementById('account-bar');
+    if (!a || !a.enabled) {
+      // Firebase yapılandırılmamış: hesap sistemi devre dışı, oyun eskisi gibi çalışır
+      if (bar) bar.style.display = 'none';
+      return;
+    }
+
+    bar.style.display = 'block';
+
+    document.getElementById('google-login-btn').addEventListener('click', async () => {
+      try {
+        await a.loginWithGoogle();
+      } catch (e) {
+        if (e && e.code === 'auth/popup-closed-by-user') return; // Kullanıcı vazgeçti
+        alert('Giriş yapılamadı: ' + (e.message || e.code || e));
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      a.logout();
+    });
+
+    document.getElementById('edit-nick-btn').addEventListener('click', async () => {
+      const current = a.getNickname() || '';
+      const nick = prompt('Yeni takma adın (en fazla 12 karakter):', current);
+      if (nick === null) return;
+      const clean = nick.trim().substring(0, 12);
+      if (!clean) {
+        alert('Takma ad boş olamaz.');
+        return;
+      }
+      try {
+        await a.setNickname(clean);
+      } catch (e) {
+        alert('Takma ad güncellenemedi: ' + (e.message || e.code || e));
+      }
+    });
+
+    a.onChange = () => this.renderAuth();
+    this.renderAuth();
+  }
+
+  renderAuth() {
+    const a = this.authManager;
+    const loggedOut = document.getElementById('account-logged-out');
+    const loggedIn = document.getElementById('account-logged-in');
+
+    if (a.isLoggedIn()) {
+      loggedOut.style.display = 'none';
+      loggedIn.style.display = 'flex';
+
+      const avatar = document.getElementById('account-avatar');
+      const photo = a.getAvatarUrl();
+      if (photo) {
+        avatar.src = photo;
+        avatar.style.display = 'inline-block';
+      } else {
+        avatar.style.display = 'none';
+      }
+
+      const nick = a.getNickname();
+      document.getElementById('account-nick').textContent = nick;
+
+      // Takma ad hesaptan gelir; lobi giriş alanları otomatik dolar ve kilitlenir
+      this.dom.hostNick.value = nick;
+      this.dom.hostNick.readOnly = true;
+      this.dom.joinNick.value = nick;
+      this.dom.joinNick.readOnly = true;
+
+      // Yerel oyunda 1. oyuncunun adını da hesaptan getir
+      const p0 = document.getElementById('player-name-0');
+      if (p0) p0.value = nick;
+    } else {
+      loggedOut.style.display = 'flex';
+      loggedIn.style.display = 'none';
+      this.dom.hostNick.readOnly = false;
+      this.dom.joinNick.readOnly = false;
+    }
+
+    this.applyAuthGate();
+  }
+
+  // Çevrimiçi oyun, hesap sistemi aktifken giriş gerektirir
+  applyAuthGate() {
+    const needLogin = !!(this.authManager && this.authManager.enabled && !this.authManager.isLoggedIn());
+    this.dom.createRoomBtn.disabled = needLogin;
+    this.dom.joinRoomBtn.disabled = needLogin;
+    const hint = document.getElementById('online-login-hint');
+    if (hint) hint.style.display = needLogin ? 'block' : 'none';
+  }
+
   // Çevrimiçi oyun mu kontrolü
   isOnlineGame() {
     return this.network && this.network.peer && !this.network.peer.destroyed;
@@ -294,7 +399,8 @@ export class Flip7UI {
 
       const input = document.createElement('input');
       input.type = 'text';
-      input.value = i === 0 ? 'Sen (Arda)' : defaultNames[i % defaultNames.length];
+      const accountNick = (i === 0 && this.authManager && this.authManager.isLoggedIn()) ? this.authManager.getNickname() : null;
+      input.value = i === 0 ? (accountNick || 'Sen (Arda)') : defaultNames[i % defaultNames.length];
       input.id = `player-name-${i}`;
       input.maxLength = 15;
 
@@ -349,7 +455,8 @@ export class Flip7UI {
     if (setupGrid) setupGrid.style.display = 'grid';
     this.dom.createRoomBtn.disabled = false;
     this.dom.joinRoomBtn.disabled = false;
-    
+    this.applyAuthGate(); // Giriş yapılmadıysa online butonları tekrar kilitle
+
     this.renderedCardIds.clear();
     this.prevLogCount = 0;
   }

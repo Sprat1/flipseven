@@ -22,7 +22,21 @@
       <div class="glass-card setup-box">
         <h1 class="cyber-title">FLIP 7 ARENA</h1>
         <p class="cyber-subtitle">Riske gir, sayı kartlarını eşleştirmeden topla, rakiplerini dondur ve 200 puana ulaşan ilk oyuncu ol!</p>
-        
+
+        <!-- HESAP ÇUBUĞU (Firebase yapılandırılmadıysa gizli kalır) -->
+        <div id="account-bar" class="account-bar" style="display: none;">
+          <div id="account-logged-out" class="account-state" style="display: none;">
+            <button id="google-login-btn" class="cyber-btn primary">Google ile Giriş Yap</button>
+            <span class="account-hint">Çevrimiçi oynamak için hesabınla giriş yap.</span>
+          </div>
+          <div id="account-logged-in" class="account-state" style="display: none;">
+            <img id="account-avatar" class="account-avatar" src="" alt="" referrerpolicy="no-referrer">
+            <span id="account-nick" class="account-nick">-</span>
+            <button id="edit-nick-btn" class="cyber-btn warning small">Takma Adı Değiştir</button>
+            <button id="logout-btn" class="cyber-btn danger small">Çıkış</button>
+          </div>
+        </div>
+
         <!-- Sekmeler (Tabs) -->
         <div class="setup-tabs">
           <button id="tab-local-btn" class="tab-btn active">Yerel / AI Oyunu</button>
@@ -50,6 +64,9 @@
 
         <!-- ONLINE MULTIPLAYER PANELİ -->
         <div id="panel-online" class="tab-panel">
+          <p id="online-login-hint" class="online-login-hint" style="display: none;">
+            Çevrimiçi oynamak için önce yukarıdan <strong>Google ile giriş</strong> yapmalısın.
+          </p>
           <div class="online-setup-grid">
             <!-- Kurucu (Host) Bölümü -->
             <div class="online-setup-box">
